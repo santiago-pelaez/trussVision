@@ -1,5 +1,13 @@
-const CACHE_NAME = 'vetin-cache-v58';
+const CACHE_NAME = 'vetin-cache-v58-tv-hackathon-3';
 const ASSETS = [
+  './vetin-ai-bridge.js',
+  './trussvision/index.html',
+  './trussvision/app.js',
+  './trussvision/gemini-client.js',
+  './trussvision/style.css',
+  './trussvision/halloween.css',
+  './trussvision/vetin-export.js',
+
   './',
   './index.html',
   './manifest.json',

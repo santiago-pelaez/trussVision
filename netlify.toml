@@ -1,0 +1,13 @@
+[build]
+  publish = "."
+  functions = "netlify/functions"
+
+[[redirects]]
+  from = "/api/analyze"
+  to = "/.netlify/functions/analyze"
+  status = 200
+
+[[headers]]
+  for = "/trussvision/*"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"

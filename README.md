@@ -338,3 +338,24 @@ Vetin is a collection of open-source, browser-based computational tools develope
   <a href="https://opensource.org/licenses/MIT">MIT License</a> ·
   <a href="https://www.iuc.edu.tr">Istanbul University-Cerrahpaşa</a>
 </p>
+
+
+## TrussVision Hackathon Extension
+
+**Treat**: photograph a statics beam diagram, use image AI to propose the geometry and loading, review it in a Halloween engineering HUD, then import the result into Vetin's original solver with one click.
+
+- Original Vetin Beam analysis is preserved at `/`.
+- AI-powered TrussVision is available at `/trussvision/`.
+- A button in the original simulator links to the AI importer.
+- The extension uses Vetin model v2 JSON and calls the upstream `loadModelIntoApp` function; it does not duplicate the beam solver.
+- Only dimensioned straight **2D beams** are transferred. Other problem types remain in TrussVision's own preview. Confirm AI-extracted values before calculating.
+- The image input recognizes planar trusses, frames, friction/levers, pulley and rope systems, composite/centroid diagrams, spatial cables, and shaft/gear/bearing problems. These non-beam classes stay in TrussVision's review/visualization mode; they are not falsely imported into Vetin's beam solver.
+- For the supplied problem screenshots, upload one cropped question at a time. The printed problem statement and diagram are the source of truth; handwritten work is treated as annotation and must be reviewed.
+- The screenshot collection used for private testing is not part of this repository.
+- GitHub Pages works as a static host: publish the repository root from the `main` branch, then use `/trussvision/` for the AI interface. The Netlify function is optional; static hosting falls back to the browser Gemini adapter.
+- For local testing, run `py -3 -m http.server 8765` from the repository root and open `/` and `/trussvision/`. Enter a restricted Google AI Studio key only when testing image scans; it stays in memory and is sent directly to Google in static mode.
+- For Netlify, use repository root as publish directory and `netlify/functions` as the functions directory. Configure `GEMINI_API_KEY` privately if using the server backend.
+- GitHub Pages project sites use a repository subpath. The bridge and AI links resolve relative to that subpath, so the fork works at both a custom domain and `OWNER.github.io/REPOSITORY/`.
+- AI disclosure: Gemini image parsing is non-deterministic, may misread symbols and units; the deterministic upstream solver runs on user-reviewed geometry.
+
+TrussVision extension by hackathon team, extending the MIT-licensed Vetin Beam Analysis by Rasim Temür. See original MIT `LICENSE`.
