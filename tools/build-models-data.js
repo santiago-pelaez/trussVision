@@ -12,7 +12,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const modelsDir = path.join(__dirname, '..', 'models');
+const modelsDir = path.join(__dirname, '..', 'vetin', 'models');
 
 function readModels() {
     return fs.readdirSync(modelsDir)

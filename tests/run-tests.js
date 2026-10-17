@@ -53,10 +53,10 @@ sandbox.globalThis = sandbox;
 const context = vm.createContext(sandbox);
 
 const load = (f) => vm.runInContext(fs.readFileSync(path.join(__dirname, '..', f), 'utf8'), context, { filename: f });
-load('solver.js');
-load('calculations.js');
+load('vetin/solver.js');
+load('vetin/calculations.js');
 // model.js'in saf dönüştürücüleri (serializeModel / deserializeModel) de aynı bağlamda test edilir
-load('model.js');
+load('vetin/model.js');
 vm.runInContext(
     'globalThis.__fns = { BeamSolver, isSystemStable, getSystemStatus, calculateAxialReaction, analyzeBeam, getCurrentModelMeters, serializeModel, deserializeModel };',
     context
@@ -397,7 +397,7 @@ console.log('\n14) Hazır modeller: denge ve çözülebilirlik');
 // =====================================================================
 console.log('\n14b) Alıştırma üreteci: tohumlu, her zaman çözülebilir');
 {
-    const src = fs.readFileSync(path.join(__dirname, '..', 'practice.js'), 'utf8').split('// ---------- Alıştırma durumu')[0];
+    const src = fs.readFileSync(path.join(__dirname, '..', 'vetin', 'practice.js'), 'utf8').split('// ---------- Alıştırma durumu')[0];
     vm.runInContext(src + ';globalThis.__gen = generatePracticeModel;', context, { filename: 'practice.js' });
     const gen = sandbox.__gen;
     let unsolved = 0;
@@ -414,7 +414,7 @@ console.log('\n15) Hazır modeller: gömülü veri (models-data.js) JSON dosyala
     // Galeri, file:// ile açılışta da çalışsın diye modelleri models-data.js'ten okur.
     // Bu dosya JSON'lardan üretilir; bir model değişip yeniden üretilmezse test düşer.
     const { readModels, buildSource } = require(path.join(__dirname, '..', 'tools', 'build-models-data.js'));
-    const dataPath = path.join(__dirname, '..', 'models', 'models-data.js');
+    const dataPath = path.join(__dirname, '..', 'vetin', 'models', 'models-data.js');
     const win = {};
     vm.runInNewContext(fs.readFileSync(dataPath, 'utf8'), { window: win });
     const fromJson = readModels();
@@ -484,7 +484,7 @@ console.log('\n18) Yükleme bütünlüğü (index.html ↔ sw.js ↔ disk)');
 console.log('\n19) Çeviri kapsamı: tüm dillerde öğrenme metinleri çevrilmiş, yer tutucular korunmuş');
 {
     const ctx = vm.createContext({ document: { documentElement: { lang: 'en' } } });
-    const src = (f) => fs.readFileSync(path.join(__dirname, '..', f), 'utf8').replace(/^﻿/, '');
+    const src = (f) => fs.readFileSync(path.join(__dirname, '..', 'vetin', f), 'utf8').replace(/^﻿/, '');
     vm.runInContext(src('translations.js').replace('const translations', 'var translations'), ctx);
     vm.runInContext(src('translations-learning.js'), ctx);
     vm.runInContext(src('translations-i18n.js'), ctx);

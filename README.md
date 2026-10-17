@@ -8,8 +8,10 @@ structural preview, and send a verified compatible beam to the original Vetin
 beam solver.
 
 This repository is a TrussVision project built on top of the MIT-licensed Vetin
-Beam Analysis application. The original Vetin simulator remains available at
-the site root; the TrussVision interface is available at [`/trussvision/`](trussvision/).
+Beam Analysis application. TrussVision is the public application at the site
+root, with the direct `/trussvision/` route kept available for static hosts.
+The preserved Vetin solver lives under `/vetin/` and is opened only by an
+explicit reviewed-beam handoff.
 
 ## What the project does
 
@@ -46,9 +48,10 @@ review and visualization workflow.
 
 | Path | Purpose |
 | --- | --- |
+| [`/`](index.html) | Public TrussVision entrypoint; redirects to the Halloween interface |
 | [`/trussvision/`](trussvision/) | Halloween-themed TrussVision AI importer and structural review UI |
-| [`/`](index.html) | Original Vetin Beam Analysis simulator and deterministic beam solver |
-| [`vetin-ai-bridge.js`](vetin-ai-bridge.js) | Links the original Vetin page to TrussVision and loads imported beam models |
+| [`/vetin/`](vetin/) | Preserved Vetin Beam Analysis simulator and deterministic beam solver |
+| [`vetin/vetin-ai-bridge.js`](vetin/vetin-ai-bridge.js) | Receives a reviewed beam from TrussVision and links back to the public app |
 | [`trussvision/vetin-export.js`](trussvision/vetin-export.js) | Converts reviewed TrussVision beam scenes to Vetin model v2 JSON |
 | [`trussvision/gemini-client.js`](trussvision/gemini-client.js) | Direct Gemini fallback for local static servers and GitHub Pages |
 | [`netlify/functions/analyze.cjs`](netlify/functions/analyze.cjs) | Optional server-side Gemini endpoint for Netlify deployments |
@@ -65,10 +68,11 @@ cd D:\trussVision
 py -3 -m http.server 8765
 ```
 
-Open both interfaces:
+Open the public interface and, when needed, the preserved solver:
 
-- Original Vetin simulator: <http://localhost:8765/>
-- TrussVision: <http://localhost:8765/trussvision/>
+- TrussVision: <http://localhost:8765/>
+- Direct TrussVision route: <http://localhost:8765/trussvision/>
+- Vetin solver: <http://localhost:8765/vetin/>
 
 For an AI scan in local static mode:
 
@@ -110,17 +114,17 @@ GitHub Pages can host this repository without Netlify:
 3. Select the `main` branch and the repository root (`/`).
 4. Open the generated project-site URL.
 
-The two interfaces are then available at:
+The public app and its direct route are then available at:
 
 ```text
 https://YOUR-USERNAME.github.io/trussVision/
 https://YOUR-USERNAME.github.io/trussVision/trussvision/
+https://YOUR-USERNAME.github.io/trussVision/vetin/
 ```
 
-The project root intentionally opens the preserved Vetin beam simulator so an
-imported beam has a stable destination. If the root page shows Vetin, open the
-second URL for the TrussVision AI interface or click **OPEN TRUSSVISION AI** in
-the root page.
+The project root intentionally redirects to TrussVision. The Vetin route is a
+secondary solver destination used after clicking **SEND BEAM TO VETIN SOLVER**;
+it is not the public landing page.
 
 GitHub Pages does not run the Netlify function. In that mode, TrussVision sends
 the typed key directly to Google's Gemini API for the current browser session.
@@ -159,10 +163,15 @@ adapter for local or static hosting.
 
 ```text
 trussVision/
-|-- index.html                 Original Vetin simulator
-|-- model.js, actions.js       Vetin model format and application actions
-|-- solver.js, calculations.js Deterministic beam analysis
-|-- vetin-ai-bridge.js         Link from Vetin to TrussVision/imported models
+|-- index.html                 TrussVision public redirect
+|-- sw.js                      One-time cleanup worker for old root deployments
+|-- vetin/                     Preserved Vetin solver runtime
+|   |-- index.html             Secondary Vetin beam solver
+|   |-- model.js, actions.js   Vetin model format and application actions
+|   |-- solver.js, calculations.js
+|   |-- vetin-ai-bridge.js     Reviewed-beam handoff bridge
+|   |-- models/                Original Vetin example models
+|   `-- vendor/                Bundled Chart.js and Three.js dependencies
 |-- trussvision/
 |   |-- index.html              TrussVision interface
 |   |-- app.js                  Scene UI, scan flow, and deterministic preview
@@ -171,8 +180,6 @@ trussVision/
 |   `-- style files             TrussVision visual system
 |-- netlify/functions/          Optional Gemini server function
 |-- tests/                      Automated regression and integration checks
-|-- models/                     Original Vetin example models
-|-- vendor/                     Bundled Chart.js and Three.js dependencies
 `-- LICENSE                     Original MIT license
 ```
 

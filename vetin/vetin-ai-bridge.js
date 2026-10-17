@@ -3,7 +3,7 @@
  'use strict';
  document.addEventListener('DOMContentLoaded',()=>{
    const button=document.createElement('a');
-   button.href=new URL('trussvision/',location.href).href;
+   button.href=new URL('../trussvision/',location.href).href;
    button.textContent='OPEN TRUSSVISION AI';
    button.setAttribute('aria-label','Open the TrussVision AI statics importer');
    button.title='Open TrussVision AI statics importer';

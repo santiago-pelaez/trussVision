@@ -1,15 +1,6 @@
-// tools/check-deploy.js
-// Sunucuya yüklemeden önce dosya bütünlüğünü denetler ve yüklenecek dosyaların listesini verir.
-// Çalıştırma:  node tools/check-deploy.js          → denetim (hata varsa çıkış kodu 1)
-//              node tools/check-deploy.js --list   → denetim + yüklenecek dosyaların listesi
-//
-// Denetlenenler:
-//   1. index.html'in yüklediği her yerel dosya (script, stylesheet, manifest, ikon)
-//      sw.js içindeki ASSETS listesinde var mı? (yoksa çevrimdışı çalışmaz)
-//   2. ASSETS'teki her dosya diskte var mı? (yoksa service worker kurulamaz:
-//      cache.addAll tek bir 404'te tümden başarısız olur)
-//   3. manifest.json'daki ikon ve ekran görüntüleri var mı?
-//   4. models/models-data.js, models/model_*.json ile güncel mi?
+// Check the files needed by both public entrypoints before deployment.
+// Run: node tools/check-deploy.js
+//      node tools/check-deploy.js --list
 
 'use strict';
 
@@ -17,82 +8,160 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '..');
+const ENTRIES = [
+    { name: 'TrussVision', root: 'trussvision', html: 'trussvision/index.html' },
+    { name: 'Vetin', root: 'vetin', html: 'vetin/index.html', sw: 'vetin/sw.js', manifest: 'vetin/manifest.json' }
+];
 
-const isLocal = (ref) => ref && !/^(https?:|data:|mailto:|#|\/\/)/i.test(ref);
-const normalize = (ref) => ref.replace(/^\.\//, '').split(/[?#]/)[0];
+const isLocal = (ref) => ref && !/^(https?:|data:|mailto:|javascript:|#|\/\/)/i.test(ref);
+const cleanRef = (ref) => ref.replace(/\\/g, '/').split(/[?#]/)[0];
 
-function readIndexReferences(root) {
-    const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-    const refs = new Set();
-    // Yorumlar içindeki örnek referanslar sayılmasın
+function normalizeRelative(base, ref) {
+    const clean = cleanRef(ref);
+    const joined = clean.startsWith('/')
+        ? clean.slice(1)
+        : path.posix.join(base, clean);
+    const normalized = path.posix.normalize(joined).replace(/^\.\//, '');
+    return normalized === '.' ? '' : normalized;
+}
+
+function readHtmlReferences(root, entry) {
+    const html = fs.readFileSync(path.join(root, entry.html), 'utf8');
     const code = html.replace(/<!--[\s\S]*?-->/g, '');
-    for (const m of code.matchAll(/<script\b[^>]*\bsrc="([^"]+)"/gi)) refs.add(m[1]);
-    for (const m of code.matchAll(/<link\b[^>]*\bhref="([^"]+)"/gi)) refs.add(m[1]);
-    for (const m of code.matchAll(/<img\b[^>]*\bsrc="([^"]+)"/gi)) refs.add(m[1]);
-    return [...refs].filter(isLocal).map(normalize);
+    const refs = new Set();
+    const patterns = [
+        /<script\b[^>]*\bsrc=["']([^"']+)["']/gi,
+        /<link\b[^>]*\bhref=["']([^"']+)["']/gi,
+        /<img\b[^>]*\bsrc=["']([^"']+)["']/gi
+    ];
+    for (const pattern of patterns) {
+        for (const match of code.matchAll(pattern)) {
+            if (isLocal(match[1])) refs.add(normalizeRelative(entry.root, match[1]));
+        }
+    }
+    return [...refs].filter(Boolean);
 }
 
-function readServiceWorkerAssets(root) {
-    const sw = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
-    const block = /const ASSETS\s*=\s*\[([\s\S]*?)\];/.exec(sw);
-    if (!block) throw new Error('sw.js içinde ASSETS listesi bulunamadı');
-    return [...block[1].matchAll(/'([^']+)'/g)].map(m => m[1]);
+function readServiceWorkerAssets(root, swPath, entryRoot) {
+    const sw = fs.readFileSync(path.join(root, swPath), 'utf8');
+    const block = /const\s+ASSETS\s*=\s*\[([\s\S]*?)\];/.exec(sw);
+    if (!block) throw new Error(`${swPath} does not contain an ASSETS list`);
+    return [...block[1].matchAll(/["']([^"']+)["']/g)]
+        .map((match) => normalizeRelative(entryRoot, match[1]))
+        .filter(Boolean);
 }
 
-function readManifestFiles(root) {
-    const manifest = JSON.parse(fs.readFileSync(path.join(root, 'manifest.json'), 'utf8'));
-    return [...(manifest.icons || []), ...(manifest.screenshots || [])].map(i => normalize(i.src));
+function readManifestFiles(root, manifestPath, entryRoot) {
+    const manifest = JSON.parse(fs.readFileSync(path.join(root, manifestPath), 'utf8'));
+    return [...(manifest.icons || []), ...(manifest.screenshots || [])]
+        .map((item) => item && item.src)
+        .filter(isLocal)
+        .map((src) => normalizeRelative(entryRoot, src))
+        .filter(Boolean);
 }
 
-// Çalışma anında istenen (önbelleğe istek anında alınan) ama ASSETS'te olmayan dosyalar
 function readRuntimeFiles(root) {
-    const dir = path.join(root, 'models');
+    const dir = path.join(root, 'vetin', 'models');
     return fs.readdirSync(dir)
-        .filter(f => /^model_\d+\.(json|svg)$/.test(f))
-        .map(f => `models/${f}`);
+        .filter((file) => /^model_\d+\.(json|svg)$/.test(file))
+        .map((file) => `vetin/models/${file}`);
 }
 
 function checkDeploy(root = ROOT) {
     const errors = [];
-    const exists = (rel) => fs.existsSync(path.join(root, rel));
+    const files = new Set(['index.html', 'sw.js']);
+    const exists = (relative) => fs.existsSync(path.join(root, relative));
 
-    const assets = readServiceWorkerAssets(root);
-    const assetSet = new Set(assets.map(normalize).filter(Boolean));
+    if (!exists('index.html')) errors.push('root index.html is missing');
+    else {
+        const rootHtml = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+        if (!/trussvision\//i.test(rootHtml)) errors.push('root index.html does not redirect to TrussVision');
+    }
+    if (!exists('sw.js')) errors.push('root migration sw.js is missing');
 
-    readIndexReferences(root).forEach(ref => {
-        if (!assetSet.has(ref)) errors.push(`index.html "${ref}" dosyasını yüklüyor ama sw.js ASSETS listesinde yok`);
-    });
-    assets.forEach(a => {
-        const rel = normalize(a);
-        if (rel && !exists(rel)) errors.push(`sw.js ASSETS içindeki "${a}" diskte yok (service worker kurulamaz)`);
-    });
-    const manifestFiles = readManifestFiles(root);
-    manifestFiles.forEach(f => { if (!exists(f)) errors.push(`manifest.json "${f}" dosyasını gösteriyor ama diskte yok`); });
+    for (const entry of ENTRIES) {
+        if (!exists(entry.html)) {
+            errors.push(`${entry.html} is missing`);
+            continue;
+        }
+        files.add(entry.html);
+
+        const references = readHtmlReferences(root, entry);
+        references.forEach((relative) => {
+            if (!exists(relative)) errors.push(`${entry.html} references missing ${relative}`);
+            files.add(relative);
+        });
+
+        if (entry.sw) {
+            if (!exists(entry.sw)) {
+                errors.push(`${entry.sw} is missing`);
+            } else {
+                files.add(entry.sw);
+                let assets = [];
+                try {
+                    assets = readServiceWorkerAssets(root, entry.sw, entry.root);
+                } catch (error) {
+                    errors.push(error.message);
+                }
+                const assetSet = new Set(assets);
+                references.forEach((relative) => {
+                    if (!assetSet.has(relative)) {
+                        errors.push(`${entry.html} loads ${relative}, but ${entry.sw} does not cache it`);
+                    }
+                });
+                assets.forEach((relative) => {
+                    if (!exists(relative)) errors.push(`${entry.sw} caches missing ${relative}`);
+                    files.add(relative);
+                });
+            }
+        }
+
+        if (entry.manifest) {
+            if (!exists(entry.manifest)) {
+                errors.push(`${entry.manifest} is missing`);
+            } else {
+                files.add(entry.manifest);
+                try {
+                    readManifestFiles(root, entry.manifest, entry.root).forEach((relative) => {
+                        if (!exists(relative)) errors.push(`${entry.manifest} references missing ${relative}`);
+                        files.add(relative);
+                    });
+                } catch (error) {
+                    errors.push(`${entry.manifest} could not be checked: ${error.message}`);
+                }
+            }
+        }
+    }
 
     try {
         const { readModels, buildSource } = require('./build-models-data.js');
-        const current = fs.readFileSync(path.join(root, 'models', 'models-data.js'), 'utf8').replace(/\r\n/g, '\n');
-        if (current !== buildSource(readModels())) errors.push('models/models-data.js güncel değil: node tools/build-models-data.js');
-    } catch (e) {
-        errors.push(`models/models-data.js denetlenemedi: ${e.message}`);
+        const dataPath = path.join(root, 'vetin', 'models', 'models-data.js');
+        const current = fs.readFileSync(dataPath, 'utf8').replace(/\r\n/g, '\n');
+        if (current !== buildSource(readModels())) {
+            errors.push('vetin/models/models-data.js is stale: run node tools/build-models-data.js');
+        }
+    } catch (error) {
+        errors.push(`vetin/models/models-data.js could not be checked: ${error.message}`);
     }
 
-    const files = [...new Set(['sw.js', ...assetSet, ...manifestFiles, ...readRuntimeFiles(root)])]
-        .filter(f => f && f !== '')
-        .sort();
-    return { errors, files };
+    readRuntimeFiles(root).forEach((relative) => {
+        if (!exists(relative)) errors.push(`runtime model file ${relative} is missing`);
+        files.add(relative);
+    });
+
+    return { errors, files: [...files].filter(Boolean).sort() };
 }
 
 if (require.main === module) {
     const { errors, files } = checkDeploy();
     if (errors.length) {
-        console.error('Yükleme denetimi BAŞARISIZ:\n' + errors.map(e => '  ✗ ' + e).join('\n'));
+        console.error('Deployment check FAILED:\n' + errors.map((error) => `  ✗ ${error}`).join('\n'));
     } else {
-        console.log(`Yükleme denetimi başarılı (${files.length} dosya).`);
+        console.log(`Deployment check passed (${files.length} referenced files).`);
     }
     if (process.argv.includes('--list')) {
-        console.log('\nSunucuya yüklenecek dosyalar (klasör yapısı korunarak):');
-        files.forEach(f => console.log('  ' + f));
+        console.log('\nReferenced deployment files:');
+        files.forEach((file) => console.log(`  ${file}`));
     }
     process.exit(errors.length ? 1 : 0);
 }

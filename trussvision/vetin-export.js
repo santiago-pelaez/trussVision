@@ -80,7 +80,7 @@
         const data=convert(s);
         if(!window.confirm('Verify the scanned dimensions, support types, load magnitudes and directions. Import this reviewed beam into the original Vetin solver?'))return;
         sessionStorage.setItem('trussvision-pending-vetin',JSON.stringify(data));
-        location.href=new URL('../?tvimport=1',location.href).href;
+        location.href=new URL('../vetin/?tvimport=1',location.href).href;
       }catch(err){if(note){note.textContent='⚠ '+err.message;note.style.color='#ffad65';}else alert(err.message);}
     });
   });

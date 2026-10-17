@@ -1,250 +1,28 @@
-<!DOCTYPE html>
-<!-- MIT License | Copyright (c) 2026 Rasim Temür | https://opensource.org/licenses/MIT -->
-<html lang="tr">
+<!doctype html>
+<html lang="en">
 <head>
-<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-72HVMM1696"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-72HVMM1696');
-</script>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>vetin | Doç. Dr. Rasim Temür</title>
-
-<!-- PWA Meta Tags -->
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#389fb6">
-<link rel="apple-touch-icon" href="icon-192.png">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js')
-        .then(reg => console.log('Service Worker registered.'))
-        .catch(err => console.log('Service Worker registration failed: ', err));
-    });
-  }
-</script>
-
-<!-- 1. TÜM CSS DOSYALARI STATİK OLARAK YÜKLENİYOR -->
-<link rel="stylesheet" href="common.css">
-<link rel="stylesheet" href="desktop-layout.css">
-<link rel="stylesheet" href="mobile-layout.css">
-<link rel="stylesheet" href="controls-3d.css">
-
-<!-- 3. parti kütüphaneler (çevrimdışı PWA desteği için yerelde barındırılır)
-     Sürümler: Chart.js 4.4.9 · Three.js 0.145.0 -->
-<script src="vendor/chart.umd.min.js"></script>
-<script src="vendor/three.min.js"></script>
-<script src="vendor/OrbitControls.js"></script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="refresh" content="0; url=trussvision/">
+  <title>TrussVision</title>
 </head>
-<body class="fluent-theme">
-<div id="drag-overlay" class="hidden" style="display: none;">
-<div class="drag-overlay-content">
-<svg viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"></path></svg>
-<p data-i18n="dropModelHere">Model dosyasını buraya sürükleyin</p>
-</div>
-</div>
-
-<header class="page-header2">
-    <div class="logo-container">
-        <a href="../"><img src="logo.svg" width="205" height="50"></a>
-        <!-- vetin uygulamaları arası geçiş. Adresler mutlaktır: sayfa nereden açılırsa
-             açılsın (yerel kopya, PWA) yayındaki uygulamalara gider. -->
-        <button type="button" id="btnAppSwitcher" class="app-switcher-btn" data-i18n-title="appsMenu" title="vetin Uygulamaları" aria-haspopup="true" aria-expanded="false" aria-controls="appSwitcherMenu">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-                <rect x="4" y="4" width="4" height="4" rx="1"/><rect x="10" y="4" width="4" height="4" rx="1"/><rect x="16" y="4" width="4" height="4" rx="1"/>
-                <rect x="4" y="10" width="4" height="4" rx="1"/><rect x="10" y="10" width="4" height="4" rx="1"/><rect x="16" y="10" width="4" height="4" rx="1"/>
-                <rect x="4" y="16" width="4" height="4" rx="1"/><rect x="10" y="16" width="4" height="4" rx="1"/><rect x="16" y="16" width="4" height="4" rx="1"/>
-            </svg>
-        </button>
-        <div id="appSwitcherMenu" class="app-switcher-menu" role="menu">
-            <a href="https://www.rasimtemur.com/vetin/momentofinertia/" class="app-tile" role="menuitem">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M 4 5 H 20 M 12 5 V 19 M 4 19 H 20" stroke-width="1.5"/>
-                    <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
-                    <path d="M 8 12 H 16 M 12 8 V 16" stroke-width="0.5" stroke-dasharray="2 2"/>
-                </svg>
-                <span data-i18n="appMomentOfInertia">Atalet Momenti</span>
-            </a>
-            <!-- Bulunulan uygulama: bağlantı değil, yalnız işaret -->
-            <span class="app-tile current" role="menuitem" aria-current="page">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="2" y="14" width="20" height="3" fill="currentColor" fill-opacity="0.05"/>
-                    <path d="M 6 17 L 3.5 22 H 8.5 L 6 17 M 3 22 L 9 22"/>
-                    <path d="M 18 17 L 16 20 H 20 L 18 17"/>
-                    <circle cx="17" cy="21.5" r="1"/><circle cx="19" cy="21.5" r="1"/>
-                    <path d="M 6 8 H 18 M 6 8 V 14 M 9 8 V 14 M 12 8 V 14 M 15 8 V 14 M 18 8 V 14"/>
-                </svg>
-                <span data-i18n="appInternalForce">İç Kuvvetler</span>
-            </span>
-            <a href="https://www.rasimtemur.com/vetin/planestress/" class="app-tile" role="menuitem">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="7" y="7" width="10" height="10" rx="0.5" fill="currentColor" fill-opacity="0.05"/>
-                    <path d="M 12 7 V 2 M 12 17 V 22 M 10.5 3.5 L 12 2 L 13.5 3.5 M 10.5 20.5 L 12 22 L 13.5 20.5"/>
-                    <path d="M 17 12 H 22 M 7 12 H 2 M 20.5 10.5 L 22 12 L 20.5 13.5 M 3.5 10.5 L 2 12 L 3.5 13.5"/>
-                    <path d="M 8 5 H 16 M 14.5 3.5 L 16 5 L 14.5 6.5 M 19 16 V 8 M 20.5 9.5 L 19 8 L 17.5 9.5"/>
-                    <path d="M 16 19 H 8 M 9.5 20.5 L 8 19 L 9.5 17.5 M 5 8 V 16 M 3.5 14.5 L 5 16 L 6.5 14.5"/>
-                </svg>
-                <span data-i18n="appPlaneStress">Düzlem Gerilme</span>
-            </a>
-            <a href="https://www.rasimtemur.com/vetin/planestrain/" class="app-tile" role="menuitem">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="7" y="7" width="10" height="10" rx="0.5" stroke-dasharray="3 3" stroke-opacity="0.5"/>
-                    <path d="M 7 17 L 11 7 L 21 7 L 17 17 Z" stroke-width="1.2" fill="currentColor" fill-opacity="0.05"/>
-                    <path d="M 11 4 H 21 M 19 2.5 L 21 4 L 19 5.5"/>
-                    <path d="M 17 20 H 7 M 9 18.5 L 7 20 L 9 21.5"/>
-                </svg>
-                <span data-i18n="appPlaneStrain">Düzlem Gerinim</span>
-            </a>
-            <a href="https://www.rasimtemur.com/vetin/bending/" class="app-tile" role="menuitem">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M 3.6 10.1 A 20 20 0 0 0 20.4 10.1 L 22.1 13.8 A 24 24 0 0 1 1.9 13.8 Z" stroke-width="1.2"/>
-                    <path d="M 0.5 12 Q 0 6.5 6 6.5 M 3.5 5 L 6 6.5 L 3.5 8" stroke-width="1.2"/>
-                    <path d="M 23.5 12 Q 24 6.5 18 6.5 M 20.5 5 L 18 6.5 L 20.5 8" stroke-width="1.2"/>
-                </svg>
-                <span data-i18n="appBending">Basit Eğilme</span>
-            </a>
-            <a href="https://www.rasimtemur.com/vetin/eccentricity/" class="app-tile" role="menuitem">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="8" y="4" width="8" height="16" rx="1" stroke-width="1.2" fill="currentColor" fill-opacity="0.05"/>
-                    <path d="M 12 2 V 22" stroke-dasharray="3 3" stroke-opacity="0.5"/>
-                    <circle cx="14" cy="12" r="1" fill="currentColor"/>
-                    <path d="M 14 12 L 18 12" stroke-dasharray="1 1"/>
-                </svg>
-                <span data-i18n="appEccentricity">Dış Merkezlik</span>
-            </a>
-            <a href="https://www.rasimtemur.com/vetin/shear/" class="app-tile" role="menuitem">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M 2 4 H 10 V 6 H 7 V 16 H 10 V 18 H 2 V 16 H 5 V 6 H 2 Z" stroke-width="1.2" fill="currentColor" fill-opacity="0.05"/>
-                    <path d="M 1 11 H 22" stroke-dasharray="3 3" stroke-opacity="0.5"/>
-                    <path d="M 12 4 L 13 6 L 15.5 6 Q 20 11 15.5 16 L 13 16 L 12 18" stroke-width="1.2" fill="currentColor" fill-opacity="0.05"/>
-                    <path d="M 12 4 V 18"/>
-                </svg>
-                <span data-i18n="appShear">Kesmeli Eğilme</span>
-            </a>
-            <a href="https://www.rasimtemur.com/vetin/torsion/" class="app-tile" role="menuitem">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M 4 9 H 16 M 4 15 H 16" stroke-width="1.2"/>
-                    <ellipse cx="4" cy="12" rx="1.5" ry="3" stroke-width="1.2" fill="currentColor" fill-opacity="0.05"/>
-                    <ellipse cx="16" cy="12" rx="1.5" ry="3" stroke-width="1.2" fill="currentColor" fill-opacity="0.05"/>
-                    <path d="M 7 9.3 Q 10 12 13 14.7" stroke-dasharray="1.5 1.5" stroke-opacity="0.6"/>
-                    <path d="M 19.5 7 A 3.5 5.5 0 0 1 19.5 17 M 17.6 17.6 L 19.5 17 L 19.2 15.1" stroke-width="1.2"/>
-                </svg>
-                <span data-i18n="appTorsion">Burulma</span>
-            </a>
-            <a href="https://www.rasimtemur.com/vetin/atlas/" class="app-tile" role="menuitem">
-                <span class="app-tile-wordmark">ATLAS</span>
-                <span>Atlas</span>
-            </a>
-        </div>
-    </div>
-</header>
-
-<div class="app-wrapper">
-    <!-- İçerik buildInitialHTML() (localization.js) tarafından üretilir.
-         Tek doğruluk kaynağı JS şablonudur; burada kopya tutulmaz. -->
-    <div class="toolbar"></div>
-    <div class="main-content">
-        <div id="canvas-wrapper">
-            <div id="modeling-area-title" data-i18n="structuralModel"></div>
-            <!-- Statik belirlilik durumu: rozet + tıklayınca açılan ayrıntı (learning-panel.js/updateSystemStatus) -->
-            <div id="system-status" class="system-status hidden"></div>
-            <canvas id="drawingCanvas" role="img" aria-label="Structural model"></canvas>
-            <img src="logo.svg" id="fullscreen-logo" alt="Logo">
-            
-            <!-- YENİ EKLENEN İPUCU KUTUSU -->
-            <div id="hint-box" class="hint-box hidden" role="status" aria-live="polite"></div>
-            
-
-            <!-- Tam ekranda modelin altında gösterilecek çizimlerin seçimi (fullscreen-panels.js) -->
-            <button id="fs-panels-btn" class="canvas-overlay-btn" data-i18n-title="fullscreenPanelsTitle" aria-haspopup="true" aria-expanded="false"><svg viewBox="0 0 24 24"><rect x="3.5" y="4" width="17" height="16" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3.5 13h17M8 16.5h8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
-            <div id="fs-panels-menu" class="fs-panels-menu" role="menu"></div>
-            <!-- Tam ekranda üst menüyü (araç çubuğu) gizle/göster (fullscreen-panels.js) -->
-            <button id="fs-toolbar-btn" class="canvas-overlay-btn" data-i18n-title="hideToolbar" aria-pressed="false"><svg class="icon-toolbar-hide" viewBox="0 0 24 24"><path d="M4 5h16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M7 15l5-5 5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><svg class="icon-toolbar-show" viewBox="0 0 24 24"><path d="M4 5h16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M7 10l5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-            <button id="cut-btn" class="canvas-overlay-btn" data-i18n-title="cutMethodTitle"><svg viewBox="0 0 24 24"><path stroke="currentColor" stroke-width="2.5" stroke-linecap="round" fill="none" d="M12 2v3.5M12 8.5v3.5M12 15v3.5M12 21.5v.5"/></svg></button>
-            <button id="download-model-btn" class="canvas-overlay-btn download-btn" data-i18n-title="downloadModelTitle"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"></path></svg></button>
-            <button id="center-btn" class="canvas-overlay-btn" data-i18n-title="centerViewTitle"><svg viewBox="0 0 24 24"><path d="M5 15H3v4c0 1.1.9 2 2 2h4v-2H5v-4zM5 5h4V3H5c-1.1 0-2 .9-2 2v4h2V5zm14-2h-4v2h4v4h2V5c0-1.1-.9-2-2-2zm0 16h-4v2h4c1.1 0 2-.9 2-2v-4h-2v4zM12 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg></button>
-            <button id="sign-btn" class="canvas-overlay-btn sign-overlay-btn" data-i18n-title="signConventionTitle" aria-label="±">±</button>
-            <button id="fullscreen-btn" class="canvas-overlay-btn" data-i18n-title="fullscreenTitle"><svg class="icon-expand" viewBox="0 0 24 24"><path d="M15 3h6v6l-2-2-4 4-2-2 4-4-2-2zM9 21H3v-6l2 2 4-4 2 2-4 4 2 2z"></path></svg><svg class="icon-shrink" viewBox="0 0 24 24" style="display: none;"><path d="m 20 2 M 10 14 L 4 14 L 6 16 L 2 20 L 4 22 L 8 18 L 10 20 L 10 14 M 14 10 L 20 10 L 18 8 L 22 4 L 20 2 L 16 6 L 14 4 L 14 10"></path></svg></button>
-        </div>
-        <!-- İçerik buildInitialHTML() tarafından üretilir -->
-        <div id="all-diagrams-container" class="hidden"></div>
-        <div id="elastic-curve-diagram-wrapper" class="diagram-container hidden"><h4 data-i18n="elasticCurveDiagram"></h4><button id="download-ecd-btn" class="download-btn" data-i18n-title="downloadDiagram"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"></path></svg></button><button class="toggle-button" data-i18n-title="show"><svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5C21.27 7.61 17 4.5 12 4.5zm0 13c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6zm0-10c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4z"></path></svg></button><div class="content-wrapper hidden"><div class="diagram-wrapper"><canvas id="elasticCurveDiagram"></canvas></div></div></div>
-        <div id="elastic-curve-3d-wrapper" class="diagram-container hidden">
-            <h4 data-i18n="elasticCurve3D"></h4>
-            <button class="toggle-button" data-i18n-title="show"><svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5C21.27 7.61 17 4.5 12 4.5zm0 13c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6zm0-10c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4z"></path></svg></button>
-            <div class="content-wrapper hidden" style="position: relative;">
-                <div class="controls-3d">
-                    <div class="view-presets">
-                        <button class="preset-btn" id="btn3DTop"><svg viewBox="0 0 24 24" width="16" height="16"><rect x="4" y="8" width="16" height="10" fill="none" stroke="currentColor" stroke-width="2" /><line x1="4" y1="8" x2="8" y2="4" stroke="currentColor" stroke-width="2" /><line x1="20" y1="8" x2="16" y2="4" stroke="currentColor" stroke-width="2" /><line x1="8" y1="4" x2="16" y2="4" stroke="currentColor" stroke-width="2" /></svg></button>
-                        <button class="preset-btn" id="btn3DFront"><svg viewBox="0 0 24 24" width="16" height="16"><rect x="4" y="6" width="16" height="12" fill="none" stroke="currentColor" stroke-width="2" /></svg></button>
-                        <button class="preset-btn" id="btn3DSide"><svg viewBox="0 0 24 24" width="16" height="16"><rect x="6" y="6" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" /><line x1="6" y1="6" x2="10" y2="3" stroke="currentColor" stroke-width="1.5" /><line x1="18" y1="6" x2="22" y2="3" stroke="currentColor" stroke-width="1.5" /></svg></button>
-                        <button class="preset-btn active" id="btn3DISO"><svg viewBox="0 0 24 24" width="16" height="16"><path d="M12 2L2 7v10l10 5 10-5V7L12 2z" fill="none" stroke="currentColor" stroke-width="2" /><path d="M12 22V12M2 7l10 5 10-5" fill="none" stroke="currentColor" stroke-width="1.5" /></svg></button>
-                    </div>
-                    <div class="scale-control-3d">
-                        <span style="font-size:11px; color:var(--fluent-neutral-foreground-hint); margin-right:4px;" data-i18n="displacementScale"></span>
-                        <input type="number" id="scale3DInput" value="300" step="10" style="width: 40px; font-size: 11px; border: 1px solid var(--fluent-stroke-color-default); border-radius: 3px; padding: 2px;">
-                    </div>
-                    <div class="zoom-controls-3d">
-                        <div class="zoom-row">
-                            <button class="zoom-btn-3d" id="btn3DZoomIn" data-i18n-title="zoomIn">+</button>
-                            <button class="zoom-btn-3d" id="btn3DZoomOut" data-i18n-title="zoomOut">−</button>
-                        </div>
-                        <div class="zoom-row">
-                            <button class="zoom-btn-3d" id="btn3DFitAll" data-i18n-title="fitToScreen"><svg viewBox="0 0 24 24" width="14" height="14"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0013 3.06V1h-2v2.06A8.994 8.994 0 003.06 11H1v2h2.06A8.994 8.994 0 0011 20.94V23h2v-2.06A8.994 8.994 0 0020.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z" fill="currentColor"/></svg></button>
-                        </div>
-                    </div>
-                </div>
-                <div id="elasticCurve3DCanvas" style="width: 100%; height: 400px;"></div>
-            </div>
-        </div>
-        <!-- Öğrenme paneli: sonuçlar, adım adım çözüm, bölge ifadeleri, alıştırma (learning-panel.js) -->
-        <div id="learning-panel" class="diagram-container hidden"></div>
-        <!-- İçerik buildInitialHTML() tarafından üretilir -->
-        <div id="data-tables-container" class="hidden"></div>
-    </div>
-</div>
-
-<!-- İçerik buildInitialHTML() (localization.js) tarafından üretilir -->
-<footer class="page-footer"></footer>
-
-<!-- 2. TÜM JAVASCRIPT DOSYALARI STATİK OLARAK YÜKLENİYOR -->
-<script src="translations.js" defer></script>
-<script src="translations-learning.js" defer></script>
-<script src="translations-i18n.js" defer></script>
-<script src="localization.js" defer></script>
-<script src="setup.js" defer></script>
-<script src="model.js" defer></script>
-<script src="draw-structure.js" defer></script>
-<script src="draw-loads.js" defer></script>
-<script src="draw-utilities.js" defer></script>
-<script src="solver.js" defer></script>
-<script src="calculations.js" defer></script>
-<script src="ui-handler.js" defer></script>
-<script src="learning-panel.js" defer></script>
-<script src="solution-steps.js" defer></script>
-<script src="practice.js" defer></script>
-<script src="cut-method.js" defer></script>
-<script src="fullscreen-panels.js" defer></script>
-<script src="download.js" defer></script>
-<script src="app.js" defer></script>
-<script src="actions.js" defer></script>
-<script src="load-dialog.js" defer></script>
-<script src="desktop-events.js" defer></script>
-<script src="mobile-events.js" defer></script>
-<script src="elastic-3d.js" defer></script>
-<script src="models/models-data.js" defer></script>
-<script src="models-gallery.js" defer></script>
-
-<!-- 3. UYGULAMAYI BAŞLATAN ANA SCRIPT -->
-<script src="main.js" defer></script>
-  <script src="vetin-ai-bridge.js" defer></script>
+<body>
+  <p>Opening <a href="trussvision/">TrussVision</a>…</p>
+  <script>
+    (() => {
+      const target = new URL('trussvision/', location.href).href;
+      const retireLegacyWorkers = async () => {
+        if ('serviceWorker' in navigator) {
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(registrations.map((registration) => registration.unregister()));
+        }
+        if ('caches' in window) {
+          const keys = await caches.keys();
+          await Promise.all(keys.map((key) => caches.delete(key)));
+        }
+      };
+      retireLegacyWorkers().catch(() => {}).finally(() => location.replace(target));
+    })();
+  </script>
 </body>
 </html>
