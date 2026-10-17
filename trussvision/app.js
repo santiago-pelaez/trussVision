@@ -37,7 +37,7 @@ function setScene(s,origin='demo'){
  $('threeD').textContent=show3d?'◈ AUTO ORBIT: ON':'◈ 2D VIEW • LOCKED';
  $('sceneJson').value=JSON.stringify(scene,null,2);
  $('sceneTitle').textContent=scene.title||'UNNAMED DIAGRAM';
- $('explanation').textContent=scene.explanation||scene.summary||'Verify extracted geometry and units.';
+ $('explanation').textContent=scene.summary||scene.title||'Review the identified geometry and loading.';
  solveAndRender();
 }
 function gauss(A,b){const n=b.length;A=A.map(r=>r.slice());b=b.slice();for(let k=0;k<n;k++){let pivot=k;for(let i=k+1;i<n;i++)if(Math.abs(A[i][k])>Math.abs(A[pivot][k]))pivot=i;if(Math.abs(A[pivot][k])<1e-10)throw Error('Mechanism, insufficient restraints or singular geometry.');[A[k],A[pivot]]=[A[pivot],A[k]];[b[k],b[pivot]]=[b[pivot],b[k]];const d=A[k][k];for(let j=k;j<n;j++)A[k][j]/=d;b[k]/=d;for(let i=0;i<n;i++){if(i===k)continue;const f=A[i][k];for(let j=k;j<n;j++)A[i][j]-=f*A[k][j];b[i]-=f*b[k];}}return b;}
@@ -54,8 +54,11 @@ function solveTruss(){
  const free=Array.from({length:D},(_,i)=>i).filter(i=>!fixed.includes(i));if(!fixed.length||!free.length)throw Error('Insufficient DOFs/restraints.');
  const u=Array(D).fill(0),small=free.map(i=>free.map(j=>K[i][j])),rhs=free.map(i=>F[i]);const displacement=gauss(small,rhs);free.forEach((i,k)=>u[i]=displacement[k]);
  const forces=elements.map(({m,i,j,L,c,s})=>{const force=E*area/L*(c*(u[2*j]-u[2*i])+s*(u[2*j+1]-u[2*i+1]));const stress=force/area/1000;return {...m,force,stress,util:Math.abs(stress)/yieldMPa};});
- const reactions=ns.flatMap((n,i)=>{if(n.support==='none')return [];return [{id:n.id,rx:K[2*i].reduce((a,v,j)=>a+v*u[j],0)-F[2*i],ry:K[2*i+1].reduce((a,v,j)=>a+v*u[j],0)-F[2*i+1]}]});
- return {type:'truss',forces,reactions,maxUtil:Math.max(0,...forces.map(f=>f.util)),maxDisp:Math.max(...ns.map((_,i)=>Math.hypot(u[i*2],u[i*2+1])))*1000};
+  const reactions=ns.flatMap((n,i)=>{if(n.support==='none')return [];return [{id:n.id,rx:K[2*i].reduce((a,v,j)=>a+v*u[j],0)-F[2*i],ry:K[2*i+1].reduce((a,v,j)=>a+v*u[j],0)-F[2*i+1]}]});
+  const appliedFx=scene.loads.reduce((v,l)=>v+safe(l.fx)*mult*forceInKN(),0),appliedFy=scene.loads.reduce((v,l)=>v+safe(l.fy)*mult*forceInKN(),0);
+  const eqFx=appliedFx+reactions.reduce((v,r)=>v+r.rx,0),eqFy=appliedFy+reactions.reduce((v,r)=>v+r.ry,0);
+  const eqM=scene.loads.reduce((v,l)=>{const n=node(l.node);return v+(n.x*safe(l.fy)-n.y*safe(l.fx))*mult*forceInKN();},0)+reactions.reduce((v,r)=>{const n=node(r.id);return v+n.x*r.ry-n.y*r.rx;},0);
+  return {type:'truss',equilibrium:{fx:eqFx,fy:eqFy,m:eqM},forces,reactions,maxUtil:Math.max(0,...forces.map(f=>f.util)),maxDisp:Math.max(...ns.map((_,i)=>Math.hypot(u[i*2],u[i*2+1])))*1000};
 }
 function solveBeam(){
  if(scene.members.length!==1||scene.nodes.length!==2)throw Error('Beam engine currently supports one straight, simply supported span.');
@@ -63,16 +66,17 @@ function solveBeam(){
  if(L<=0||a.y!==b.y||!['pin','roller'].includes(a.support)||!['pin','roller'].includes(b.support))throw Error('Beam requires a horizontal span with pin/roller supports at the ends.');
  if((scene.couples||[]).length)throw Error('Applied moments require an upgraded beam solver. Visualizing moments only.');
  if(scene.distributedLoads.some(d=>Math.abs(safe(d.w)-safe(d.wEnd,d.w))>1e-8))throw Error('Triangular/trapezoidal loads require an upgraded beam solver.');
- if(scene.loads.some(l=>Math.abs(safe(l.fx))>1e-9))throw Error('Horizontal loads are not supported by this beam calculator.');
+  if(scene.loads.some(l=>Math.abs(safe(l.fx))>1e-9)||scene.pointLoads.some(l=>Math.abs(safe(l.fx))>1e-9))throw Error('Horizontal loads are not supported by this beam calculator.');
  const pts=[...scene.pointLoads.map(p=>({x:safe(p.x),P:safe(p.fy)*mult})),...scene.loads.map(p=>({x:node(p.node)?.x??left,P:safe(p.fy)*mult}))];
  const udls=scene.distributedLoads.map(d=>({from:safe(d.from),to:safe(d.to),w:safe(d.w)*mult}));
  for(const p of pts)if(p.x<left-1e-9||p.x>right+1e-9)throw Error('Point load outside beam span.');
  for(const d of udls)if(d.from<left-1e-9||d.to>right+1e-9||d.from>=d.to)throw Error('Distributed load has invalid range.');
  const total=pts.reduce((s,p)=>s+p.P,0)+udls.reduce((s,d)=>s+d.w*(d.to-d.from),0);
  const moments=pts.reduce((s,p)=>s+p.P*(p.x-left),0)+udls.reduce((s,d)=>s+d.w*(d.to-d.from)*((d.from+d.to)/2-left),0);
- const RB=-moments/L,RA=-total-RB;
+  const RB=-moments/L,RA=-total-RB;
+  const equilibrium={fx:0,fy:RA+RB+total,m:RB*L+moments};
  const results=Array.from({length:161},(_,i)=>{const x=left+L*i/160;let V=RA,M=RA*(x-left);for(const p of pts){if(x>=p.x){V+=p.P;M+=p.P*(x-p.x);}}for(const d of udls){const overlap=Math.max(0,Math.min(x,d.to)-d.from);V+=d.w*overlap;M+=d.w*overlap*(x-d.from-overlap/2);}return {x,V,M};});
- return {type:'beam',RA,RB,points:results,maxShear:Math.max(...results.map(r=>Math.abs(r.V))),maxMoment:Math.max(...results.map(r=>Math.abs(r.M))),maxUtil:null};
+  return {type:'beam',RA,RB,equilibrium,totalApplied:total,momentApplied:moments,span:L,points:results,maxShear:Math.max(...results.map(r=>Math.abs(r.V))),maxMoment:Math.max(...results.map(r=>Math.abs(r.M))),maxUtil:null};
 }
 function solveSpatialVectors(){
  const loads=scene.loads||[];if(!loads.length)throw Error('No explicitly known spatial forces to sum; upload clearer image or review scene data.');
@@ -184,6 +188,7 @@ function renderInformation(){
  $('solverBadge').textContent=solution?(source==='demo'?'CALCULATED • DEMO':'CALCULATED • CHECK INPUT'):'VISUALIZATION ONLY';
  $('solverBadge').style.color=source==='demo'&&solution?'var(--green)':'var(--amber)';
  renderForceTelemetry();
+ renderStudentAnalysis();
  $('results').replaceChildren();const r=$('results');
  const line=(a,b,invalid=false)=>{const d=document.createElement('div');if(invalid)d.className='invalid';const label=document.createElement('strong');label.textContent=a+': ';d.append(label,document.createTextNode(b));r.append(d);};
  line('Topic',scene.summary||scene.title||'Unknown');
@@ -207,6 +212,42 @@ function renderInformation(){
  line('Source',source==='demo'?'Original demo':'AI-generated interpretation; values may be inaccurate. Inspect before relying on any result.');
  const notes=[...(scene.warnings||[]),...(scene.questions||[]).map(q=>'Confirm: '+q)];
  $('warnings').replaceChildren();for(const w of notes){const n=document.createElement('div');n.className='note';n.textContent='⚠ '+w;$('warnings').append(n);}
+}
+// Equilibrium always governs a body at rest: unknown reactions must be included.
+// Never substitute zero for an unsolved reaction or an unbalanced subset of loads.
+function renderStudentAnalysis(){
+ const target=$('analysisSteps');if(!target)return;target.replaceChildren();
+ const add=(heading,body)=>{const block=document.createElement('section');block.className='analysis-step';const title=document.createElement('h3');title.textContent=heading;const para=document.createElement('p');para.textContent=body;block.append(title,para);target.append(block);};
+ const u=forceLabel(),length=scene.units,allLoads=(scene.loads||[]).length+(scene.pointLoads||[]).length+(scene.distributedLoads||[]).length;
+ add('1. Read the problem',`${scene.summary||scene.title||'Review the diagram.'} ${scene.nodes.length} identified nodes, ${scene.members.length} connecting elements, ${allLoads} load entries. Units: ${u}, ${length}. ${source==='demo'?'Demonstration data: change loads or geometry to explore the outcome.':'Review every extracted or edited magnitude, direction, length and support before trusting the math.'}`);
+ add('2. Draw the free-body diagram','Isolate the structure. Replace pin restraints with horizontal and vertical reactions; replace rollers with their restrained-direction reaction. Show each external load and its direction. For distributed loads, use the equivalent resultant at its centroid when taking moments.');
+ add('3. Apply equilibrium','Because the structure is static, the COMPLETE set of external forces and moments must satisfy ΣFx = 0, ΣFy = 0, and ΣM = 0 in 2D; in 3D all three force and all three moment components must balance. Applied loads alone usually do NOT sum to zero: support reactions and unknown forces complete the balance.');
+ if(problem){
+  add('4. What can be solved',`A numerical answer is not available for this model: ${problem} The equilibrium equations still apply. Avoid assigning zero to unknown reactions.`);
+ }else if(solution?.type==='beam'){
+  const q=solution;
+  add('4. Solve the reactions',`Take moments about the left support: R_B × ${fmt(q.span)} ${length} + (${fmt(q.momentApplied)} ${u}·${length}) = 0, so R_B = ${fmt(q.RB)} ${u}. Then ΣFy = 0: R_A + R_B + (${fmt(q.totalApplied)} ${u}) = 0, giving R_A = ${fmt(q.RA)} ${u}.`);
+  add('5. Shear and bending',`Cut sections along the beam and sum forces to obtain shear V(x); integrate shear to obtain bending moment M(x). Peak sampled |V| = ${fmt(q.maxShear)} ${u}; peak sampled |M| = ${fmt(q.maxMoment)} ${u}·${length}. These are sampled values, so an exact local peak between samples may differ.`);
+ }else if(solution?.type==='truss'){
+  const q=solution;
+  const highest=[...q.forces].sort((a,b)=>Math.abs(b.force)-Math.abs(a.force))[0];
+  const rx=q.reactions.map(r=>`${r.id}: (${fmt(r.rx/forceInKN())}, ${fmt(r.ry/forceInKN())}) ${u}`).join('; ');
+  add('4. Solve joint forces and reactions',`The pin-jointed truss uses axial member stiffness and displacement compatibility. Computed support reactions: ${rx}. Positive axial member force means tension; negative means compression.${highest?` The highest |axial force| is ${highest.a}–${highest.b}: ${fmt(highest.force/forceInKN())} ${u}.`:''}`);
+  add('5. Interpret the result',`Maximum joint displacement ≈ ${fmt(q.maxDisp)} mm; maximum axial stress/yield ratio ≈ ${fmt(q.maxUtil*100)}%. Stress results depend on the assumed area, modulus, yield stress and the ideal pin-joint/linear-elastic model. This is not a buckling or code-compliance check.`);
+ }else if(solution?.type==='spatial'){
+  const q=solution;
+  add('4. Balance the 3D force system',`Sum of KNOWN applied forces = (${fmt(q.R.x)}, ${fmt(q.R.y)}, ${fmt(q.R.z)}) ${u}. Sum of KNOWN applied moments about the origin = (${fmt(q.M.x)}, ${fmt(q.M.y)}, ${fmt(q.M.z)}) ${u}·${length}. The missing cable or bearing reactions must oppose these as required by the actual support constraints; their individual values have NOT been solved.`);
+  add('5. Next equations','List each allowable support reaction or cable tension, resolve along x/y/z and use ΣFx = ΣFy = ΣFz = 0 plus ΣMx = ΣMy = ΣMz = 0. Additional member geometry or constitutive relations may be needed. Do not assume every applied-force component is zero.');
+ }
+ if(solution?.equilibrium){
+  const e=solution.equilibrium;
+  const forceScale=solution.type==='beam'?[Math.abs(solution.RA),Math.abs(solution.RB),Math.abs(solution.totalApplied)]:solution.reactions.flatMap(r=>[Math.abs(r.rx),Math.abs(r.ry)]);
+  const forceTol=1e-6*Math.max(1,...forceScale),momentTol=1e-6*Math.max(1,Math.abs(solution.type==='beam'?solution.momentApplied:0));
+  const forcePass=Math.max(Math.abs(e.fx),Math.abs(e.fy))<=forceTol,momentPass=solution.type!=='truss'||Math.abs(e.m)<=momentTol;
+  add('Equilibrium verification',`Calculated residuals (should be approximately zero): ΣFx = ${fmt(e.fx)} ${solution.type==='truss'?'kN':u}, ΣFy = ${fmt(e.fy)} ${solution.type==='truss'?'kN':u}, ΣM = ${fmt(e.m)} ${solution.type==='truss'?'kN·'+length:u+'·'+length}. ${forcePass&&momentPass?'Force and moment equilibrium checks passed.':'WARNING: equilibrium needs review.'} Small residuals are numerical rounding effects, not permission to skip reaction forces.`);
+ }
+ if((scene.studySteps||[]).length)add('Study prompts',scene.studySteps.slice(0,5).join(' '));
+ if(scene.explanation)add('Model context',scene.explanation);
 }
 function resize(){const r=canvas.getBoundingClientRect(),dpr=Math.min(2,devicePixelRatio||1);canvas.width=Math.max(1,Math.round(r.width*dpr));canvas.height=Math.max(1,Math.round(r.height*dpr));ctx.setTransform(dpr,0,0,dpr,0,0);draw();}
 function bounds(){
@@ -307,7 +348,7 @@ let currentFile=null,sourceImage=null;
 function useFile(file){
  showError('');if(!file)return;
  if(!['image/png','image/jpeg','image/webp','application/pdf'].includes(file.type)){showError('Please select a JPG, PNG, WebP or PDF.');return;}
- if(file.type==='application/pdf'&&file.size>3*1024*1024){showError('PDF must be under 3 MB (Netlify limit). For a multi-page exam, screenshot one question as JPG.');return;}
+  if(file.type==='application/pdf'&&file.size>3*1024*1024){showError('PDF must be under 3 MB. For a multi-page exam, screenshot one question as JPG.');return;}
  if(file.type!=='application/pdf'&&file.size>22*1024*1024){showError('Please choose an image under 22 MB.');return;}
  currentFile=file;$('analyze').disabled=false;
  if(file.type==='application/pdf'){sourceImage=null;$('thumb').hidden=true;$('latency').textContent='PDF ready • upload one problem/page for best accuracy';}

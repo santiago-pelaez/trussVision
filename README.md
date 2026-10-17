@@ -22,6 +22,11 @@ the site root; the TrussVision interface is available at [`/trussvision/`](truss
    click.
 6. Use Vetin's original solver and diagrams for the final beam calculation.
 
+For supported trusses and beams, the review panel explains the free-body
+diagram, includes support reactions in the equilibrium equations, and reports
+the calculated force and moment residuals. Applied loads alone are not expected
+to sum to zero; the complete external system includes the reactions.
+
 The image parser is designed to recognize several classroom statics topics,
 including:
 
@@ -111,6 +116,11 @@ The two interfaces are then available at:
 https://YOUR-USERNAME.github.io/trussVision/
 https://YOUR-USERNAME.github.io/trussVision/trussvision/
 ```
+
+The project root intentionally opens the preserved Vetin beam simulator so an
+imported beam has a stable destination. If the root page shows Vetin, open the
+second URL for the TrussVision AI interface or click **OPEN TRUSSVISION AI** in
+the root page.
 
 GitHub Pages does not run the Netlify function. In that mode, TrussVision sends
 the typed key directly to Google's Gemini API for the current browser session.

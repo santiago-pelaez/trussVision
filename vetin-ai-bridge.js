@@ -4,7 +4,9 @@
  document.addEventListener('DOMContentLoaded',()=>{
    const button=document.createElement('a');
    button.href=new URL('trussvision/',location.href).href;
-   button.textContent='🎃 AI PHOTO → BEAM';
+   button.textContent='OPEN TRUSSVISION AI';
+   button.setAttribute('aria-label','Open the TrussVision AI statics importer');
+   button.title='Open TrussVision AI statics importer';
    Object.assign(button.style,{position:'fixed',right:'18px',bottom:'18px',zIndex:'99999',background:'#29143e',color:'#ffb85c',border:'1px solid #ff8c39',borderRadius:'12px',padding:'12px 17px',boxShadow:'0 0 20px #e15e7155',font:'bold 13px system-ui',textDecoration:'none'});
    document.body.appendChild(button);
    if(new URLSearchParams(location.search).get('tvimport')!=='1')return;
