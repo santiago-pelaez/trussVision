@@ -5,7 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { solveTrussModel, analyzeTrussScene } = require('../trussvision/truss-solver.js');
 
-const benchmark = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '_regression_kit', 'benchmark.json'), 'utf8'));
+const benchmark = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures', 'truss-benchmark.json'), 'utf8'));
 const near = (actual, expected, tolerance = 1e-3) => assert.ok(Math.abs(actual - expected) <= tolerance, `${actual} != ${expected}`);
 const byName = (result, a, b) => result.forces.find(f => (f.a === a && f.b === b) || (f.a === b && f.b === a));
 const byNode = (result, id) => result.reactions.find(r => r.id === id);

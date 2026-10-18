@@ -19,6 +19,8 @@ jobs:
         run: node tests/run-tests.js
       - name: Run TrussVision contract checks
         run: node tests/trussvision-checks.js
+      - name: Run truss physics regressions
+        run: node tests/truss-regression.js
       - name: Validate deployment references
         run: node tools/check-deploy.js
       - name: Check JavaScript syntax

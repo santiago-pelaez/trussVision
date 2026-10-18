@@ -96,6 +96,7 @@ Run the full existing test suite from the repository root:
 ```powershell
 node tests\run-tests.js
 node tests\trussvision-checks.js
+node tests\truss-regression.js
 node tools\check-deploy.js
 git diff --check
 ```
@@ -194,11 +195,13 @@ trussVision/
 |-- trussvision/
 |   |-- index.html              TrussVision interface
 |   |-- app.js                  Scene UI, scan flow, and deterministic preview
+|   |-- truss-solver.js         Pure 2D truss solver shared by UI and tests
 |   |-- gemini-client.js        Static-host Gemini adapter
 |   |-- vetin-export.js         Reviewed beam to Vetin model conversion
 |   `-- style files             TrussVision visual system
 |-- netlify/functions/          Optional Gemini server function
 |-- tests/                      Vetin regression and TrussVision contract checks
+|   `-- fixtures/               Deterministic statics regression scenes
 |-- .github/workflows/          CI checks for pushes and pull requests
 `-- LICENSE                     Original MIT license
 ```
