@@ -395,8 +395,8 @@ async function requestSceneAnalysis(encoded){
   // backend error should remain visible instead of being hidden.
   if(error?.message&&/Scan HTTP|analysis API|Gemini|key|image|HTTP/.test(error.message)&&!/Failed to fetch|NetworkError|Load failed/i.test(error.message))throw error;
  }
- if(!window.TVGemini?.analyze)throw Error('No AI backend is available. Deploy the Netlify function or load gemini-client.js for static hosting.');
- $('latency').textContent='Using direct Gemini connection…';
+ if(!window.TVGemini?.analyze)throw Error('AI scanning is unavailable right now. Check your key and try again.');
+ $('latency').textContent='Reading diagram…';
  return window.TVGemini.analyze(payload);
 }
 $('analyze').onclick=async()=>{

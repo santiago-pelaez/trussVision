@@ -2,6 +2,12 @@
 <!-- MIT License | Copyright (c) 2026 Rasim Temür | https://opensource.org/licenses/MIT -->
 <html lang="tr">
 <head>
+<script>
+  // Vetin is a handoff destination, not the public landing page.
+  if (new URLSearchParams(location.search).get('tvimport') !== '1') {
+    location.replace(new URL('../trussvision/', location.href).href);
+  }
+</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>vetin | Doç. Dr. Rasim Temür</title>
@@ -45,7 +51,7 @@
 
 <header class="page-header2">
     <div class="logo-container">
-        <a href="../"><img src="logo.svg" width="205" height="50"></a>
+        <a href="../trussvision/"><img src="logo.svg" width="205" height="50"></a>
         <!-- vetin uygulamaları arası geçiş. Adresler mutlaktır: sayfa nereden açılırsa
              açılsın (yerel kopya, PWA) yayındaki uygulamalara gider. -->
         <button type="button" id="btnAppSwitcher" class="app-switcher-btn" data-i18n-title="appsMenu" title="vetin Uygulamaları" aria-haspopup="true" aria-expanded="false" aria-controls="appSwitcherMenu">

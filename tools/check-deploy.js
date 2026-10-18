@@ -87,6 +87,13 @@ function checkDeploy(root = ROOT) {
         files.add(entry.html);
 
         const references = readHtmlReferences(root, entry);
+        const html = fs.readFileSync(path.join(root, entry.html), 'utf8');
+        if (entry.root === 'trussvision' && /<a\b[^>]*\bhref=["'][^"']*vetin/i.test(html)) {
+            errors.push('trussvision/index.html contains a direct Vetin link');
+        }
+        if (entry.root === 'vetin' && !/tvimport/.test(html)) {
+            errors.push('vetin/index.html is missing the explicit handoff guard');
+        }
         references.forEach((relative) => {
             if (!exists(relative)) errors.push(`${entry.html} references missing ${relative}`);
             files.add(relative);

@@ -120,7 +120,7 @@ REQUIREMENTS:
 
   async function analyze({apiKey, model, base64, mimeType, detailed}) {
     const key = String(apiKey || '').trim();
-    if (!key) throw Error('Enter a Google AI Studio key for static-host scanning. It is used only for this session.');
+    if (!key) throw Error('Enter your AI key before scanning.');
     if (!MODELS.has(model)) throw Error('Unsupported model choice.');
     const candidates = [...new Set([model, 'gemini-3.6-flash', 'gemini-3.8-flash'])];
     let lastError;

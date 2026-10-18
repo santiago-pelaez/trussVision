@@ -65,3 +65,11 @@ body.haunted .scanning:after{background:#b8ff9f;box-shadow:0 0 20px #a1ff8f}
 .analysis-step h3{font:700 10px Orbitron,sans-serif;letter-spacing:.15px;color:#ffad65;margin:0 0 8px;}
 .analysis-step p{margin:0;color:#e8d8ef;font-size:11px;line-height:1.65;white-space:normal;overflow-wrap:anywhere;}
 .explanation{max-height:620px;overflow:auto;}
+
+/* Keep implementation-only controls available without crowding the main flow. */
+.advanced-details{border:1px solid #69436f;background:rgba(26,13,43,.5);border-radius:7px;overflow:hidden;}
+.advanced-details summary{padding:11px 12px;cursor:pointer;color:#ffb668;font:700 10px Orbitron,sans-serif;letter-spacing:.15px;list-style:none;}
+.advanced-details summary::-webkit-details-marker{display:none;}
+.advanced-details summary::after{content:'+';float:right;font-size:14px;line-height:10px;}
+.advanced-details[open] summary::after{content:'−';}
+.advanced-body{padding:0 12px 12px;}
