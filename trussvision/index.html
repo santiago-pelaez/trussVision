@@ -21,15 +21,19 @@
         <span class="reactor-pumpkin" aria-hidden="true">&#127875;</span>
         <div><strong>TRUSS<span>VISION</span>.AI</strong><small>AZHAN MOHAMMED + SANTIAGO PELAEZ</small></div>
       </div>
-      <div class="keyarea">
-        <label for="apiKey">AI KEY</label>
-        <input id="apiKey" type="password" placeholder="Google AI Studio key (session only)" autocomplete="off">
-        <select id="model">
-          <option value="gemini-3.8-flash">3.8 FLASH - FAST</option>
-          <option value="gemini-4-argon">GEMINI 4 ARGON - DEEP</option>
-          <option value="gemini-3.6-flash">3.6 FLASH</option>
-        </select>
-      </div>
+      <details class="settings-details">
+        <summary>AI SETTINGS</summary>
+        <div class="settings-body">
+          <label for="apiKey">OPTIONAL AI KEY</label>
+          <input id="apiKey" type="password" placeholder="Session key for image scans" autocomplete="off" aria-describedby="keyHelp">
+          <select id="model" aria-label="AI model">
+            <option value="gemini-3.8-flash">3.8 FLASH - FAST</option>
+            <option value="gemini-4-argon">GEMINI 4 ARGON - DEEP</option>
+            <option value="gemini-3.6-flash">3.6 FLASH</option>
+          </select>
+          <small id="keyHelp">The built-in demonstrations work without a key.</small>
+        </div>
+      </details>
       <div class="header-actions">
         <button id="themeToggle" class="outline haunt-toggle" aria-pressed="true">&#127875; SPOOK MODE: ON</button>
         <button id="threeD" class="outline">2D VIEW - LOCKED</button>
@@ -37,10 +41,17 @@
       </div>
     </header>
 
+    <nav class="workflow" aria-label="TrussVision workflow">
+      <div id="workflowScan" class="workflow-step active"><span>01</span><strong>SCAN</strong><small>Choose a diagram</small></div>
+      <div id="workflowReview" class="workflow-step"><span>02</span><strong>REVIEW</strong><small>Check geometry and loads</small></div>
+      <div id="workflowSolve" class="workflow-step"><span>03</span><strong>SOLVE</strong><small>Inspect results</small></div>
+    </nav>
+
     <main class="workspace">
       <aside class="panel sidebar">
         <section>
-          <div class="section-head">01 // VISION PORTAL <span id="status" class="healthy">READY</span></div>
+          <div class="section-head">01 // CHOOSE DIAGRAM <span id="status" class="healthy">READY</span></div>
+          <p class="section-intro">Start with a built-in example or upload one clear statics problem.</p>
           <div id="drop" class="upload">
             <div class="upload-glyph">&#9678;</div>
             <strong>DROP A DIAGRAM INTO THE PORTAL</strong>
@@ -56,10 +67,11 @@
         </section>
 
         <section>
-          <div class="section-head">02 // LOADOUT</div>
+          <div class="section-head">02 // REVIEW &amp; ASSUMPTIONS</div>
+          <p class="section-intro">Review detected values before trusting the deterministic preview.</p>
           <div class="field"><label>DEMO SCENARIO</label><select id="example"><option value="truss">Pratt-style truss</option><option value="beam">Beam / distributed load</option><option value="machine3d">3D shaft / bearings</option><option value="cable3d">3D cable forces</option><option value="frame2d">2D frame (preview only)</option></select><button id="loadDemo" class="outline wide">LOAD DEMO</button></div>
-          <div class="field"><label>LOAD MULTIPLIER <b id="multiplierLabel">1.00x</b></label><input id="multiplier" type="range" min="0" max="200" value="100"></div>
-          <div class="field"><label>ASSUMED TRUSS MEMBER AREA</label><div class="units"><input id="area" type="number" min="1" step="10" value="1200"><span>mm2</span></div></div>
+          <div class="field"><label>LOAD MULTIPLIER <b id="multiplierLabel">1.00×</b></label><input id="multiplier" type="range" min="0" max="200" value="100"></div>
+          <div class="field"><label>ASSUMED TRUSS MEMBER AREA</label><div class="units"><input id="area" type="number" min="1" step="10" value="1200"><span>mm²</span></div></div>
           <div class="field"><label>ASSUMED ELASTIC MODULUS</label><div class="units"><input id="elastic" type="number" min="1" step="10" value="200"><span>GPa</span></div></div>
           <div class="field"><label>YIELD STRESS (CLASSROOM CHECK)</label><div class="units"><input id="yield" type="number" min="1" step="10" value="250"><span>MPa</span></div></div>
           <button id="reset" class="outline wide danger">RESTORE CURRENT SCENE</button>
@@ -77,9 +89,9 @@
 
       <div class="center">
         <div class="panel canvas-panel">
-          <div class="canvas-top"><div><strong>STRUCTURAL VISUALIZATION</strong><small id="sceneTitle">SELECTED: PRATT TRUSS // EXAMPLE</small></div><span id="solverBadge" class="chip">READY</span></div>
+          <div class="canvas-top"><div><strong>03 // SOLVE</strong><small id="sceneTitle">SELECTED: PRATT TRUSS // EXAMPLE</small></div><span id="solverBadge" class="chip">READY</span></div>
           <div class="toolbar"><button data-mode="select" class="on">SELECT / DRAG</button><button data-mode="load">LOAD</button><button data-mode="build">+ MEMBER</button><button data-mode="delete">DELETE</button><button id="labels" class="on">Aa LABELS</button></div>
-          <div class="viewport-frame"><canvas id="stage"></canvas><div class="corner-ornament corner-tl" aria-hidden="true"></div><div class="corner-ornament corner-tr" aria-hidden="true"></div><div class="viewport-caption" aria-hidden="true">TREAT MODE // STRUCTURAL SIGHT</div></div>
+          <div class="viewport-frame"><canvas id="stage" tabindex="0" role="img" aria-label="Interactive structural scene" aria-describedby="modeInfo"></canvas><div class="corner-ornament corner-tl" aria-hidden="true"></div><div class="corner-ornament corner-tr" aria-hidden="true"></div><div class="viewport-caption" aria-hidden="true">TREAT MODE // STRUCTURAL SIGHT</div></div>
           <div class="canvas-foot"><span id="modeInfo">Drag nodes to explore geometry. Drag blank canvas to pan. Scroll to zoom.</span><span>TRUSSVISION.AI</span></div>
         </div>
         <div class="panel explanation">
@@ -92,15 +104,15 @@
 
       <aside class="panel sidebar right">
         <section>
-          <div class="section-head">05 // REAL-TIME TELEMETRY</div>
+          <div class="section-head">04 // RESULTS</div>
           <div class="stat-grid"><div><small>STRUCTURE</small><strong id="kind">TRUSS</strong></div><div><small>NODES / MEMBERS</small><strong id="counts">5 / 7</strong></div><div><small>MAX UTILIZATION</small><strong id="util">--</strong></div><div><small>INPUT CONFIDENCE</small><strong id="confidence">DEMO</strong></div></div>
           <div class="meter"><div id="bar"></div></div>
           <div class="telemetry-section"><div class="mini-head">05A // MEMBER FORCE TELEMETRY</div><div class="hud-table-head member-cols"><span>MEMBER</span><span>STATE</span><span>FORCE</span></div><div id="telemetry" class="hud-data-table" aria-live="polite"></div></div>
           <div class="telemetry-section"><div class="mini-head">05B // APPLIED NODE FORCES <span id="nodeForceUnit">kN</span></div><p class="telemetry-caption">External joint loads (Fx, Fy), not internal member forces.</p><div id="nodeTableHead" class="hud-table-head node-cols"><span>NODE</span><span>Fx</span><span>Fy</span></div><div id="nodeTelemetry" class="hud-data-table" aria-live="polite"></div><p id="beamNodeNote" class="telemetry-caption" hidden>Beam point loads and distributed loads act along the span; they are not included in the node table.</p></div>
           <div class="telemetry-section"><div class="mini-head">05C // SUPPORT REACTIONS <span id="reactionUnit">kN</span></div><div id="reactionHead" class="hud-table-head node-cols"><span>NODE</span><span>Rx</span><span>Ry</span></div><div id="reactionTelemetry" class="hud-data-table" aria-live="polite"></div></div>
         </section>
-        <section><div class="section-head">06 // ANALYSIS OUTPUT</div><div id="results" class="analysis"></div></section>
-        <section><div class="section-head">07 // TRANSFER</div><button id="vetinExport" class="primary accent wide">SEND BEAM TO VETIN SOLVER</button><div id="vetinFeedback" class="hint" role="status" style="margin-top:8px">Reviewed, dimensioned 2D beams only.</div></section>
+        <section><div class="section-head">05 // ANALYSIS OUTPUT</div><div id="results" class="analysis"></div></section>
+        <section><div class="section-head">06 // OPTIONAL BEAM HANDOFF</div><button id="vetinExport" class="primary accent wide" disabled>SEND BEAM TO VETIN SOLVER</button><div id="vetinFeedback" class="hint" role="status" style="margin-top:8px">Only reviewed, dimensioned 2D beams can be handed off.</div></section>
         <details class="advanced-details">
           <summary>ADVANCED // METHOD &amp; EXPORT</summary>
           <div class="advanced-body">
@@ -112,6 +124,24 @@
     </main>
     <footer>TRUSSVISION.AI // HALLOWEEN TREAT EDITION <span>REAL STATICS - NO GHOST FORCES - ALWAYS CHECK ASSUMPTIONS AND UNITS</span></footer>
   </div>
+  <dialog id="loadDialog" class="app-dialog" aria-labelledby="loadDialogTitle">
+    <form method="dialog" class="dialog-card">
+      <h2 id="loadDialogTitle">Edit joint load</h2>
+      <p id="loadDialogHelp" class="hint">Enter a vertical force. Negative values point downward.</p>
+      <label for="loadValue">Vertical force (<span id="loadUnit">kN</span>)</label>
+      <input id="loadValue" type="number" step="any" inputmode="decimal">
+      <div class="dialog-actions"><button id="loadCancel" class="outline" value="cancel">CANCEL</button><button id="loadApply" class="primary" value="apply">APPLY LOAD</button></div>
+    </form>
+  </dialog>
+  <dialog id="transferDialog" class="app-dialog" aria-labelledby="transferDialogTitle">
+    <form method="dialog" class="dialog-card">
+      <h2 id="transferDialogTitle">Review beam handoff</h2>
+      <p id="transferSummary" class="hint"></p>
+      <p class="dialog-warning">Confirm the dimensions, supports, loads, and units before opening the beam solver.</p>
+      <div class="dialog-actions"><button id="transferCancel" class="outline" value="cancel">CANCEL</button><button id="transferConfirm" class="primary accent" value="transfer">OPEN BEAM SOLVER</button></div>
+    </form>
+  </dialog>
+  <script src="./truss-solver.js"></script>
   <script src="./gemini-client.js" defer></script>
   <script type="module" src="./app.js"></script>
   <script src="./vetin-export.js" defer></script>

@@ -72,16 +72,25 @@
   root.TVBeamAdapter=api;
   if(typeof document==='undefined')return;
   document.addEventListener('DOMContentLoaded',()=>{
-    const button=document.getElementById('vetinExport'),note=document.getElementById('vetinFeedback');
+    const button=document.getElementById('vetinExport'),note=document.getElementById('vetinFeedback'),dialog=document.getElementById('transferDialog'),summary=document.getElementById('transferSummary');
     if(!button)return;
+    let pendingData=null;
+    const completeTransfer=()=>{
+      if(!pendingData)return;
+      sessionStorage.setItem('trussvision-pending-vetin',JSON.stringify(pendingData));
+      location.href=new URL('../vetin/?tvimport=1',location.href).href;
+    };
+    dialog?.addEventListener('close',()=>{
+      if(dialog.returnValue==='transfer')completeTransfer();
+      else pendingData=null;
+    });
     button.addEventListener('click',()=>{
       try{
         const s=JSON.parse(document.getElementById('sceneJson').value);
-        const data=convert(s);
-        if(!window.confirm('Verify the scanned dimensions, support types, load magnitudes and directions. Import this reviewed beam into the beam solver?'))return;
-        sessionStorage.setItem('trussvision-pending-vetin',JSON.stringify(data));
-        location.href=new URL('../vetin/?tvimport=1',location.href).href;
-      }catch(err){if(note){note.textContent='⚠ '+err.message;note.style.color='#ffad65';}else alert(err.message);}
+        pendingData=convert(s);
+        if(summary)summary.textContent=`${pendingData.beam.length} m beam · ${pendingData.supports.length} support${pendingData.supports.length===1?'':'s'} · ${pendingData.concentratedLoads.length+pendingData.distributedLoads.length+pendingData.trapezoidalLoads.length} load entries`;
+        if(dialog?.showModal)dialog.showModal();else completeTransfer();
+      }catch(err){if(note){note.textContent='⚠ '+err.message;note.style.color='#ffad65';}}
     });
   });
 })(typeof window!=='undefined'?window:globalThis);

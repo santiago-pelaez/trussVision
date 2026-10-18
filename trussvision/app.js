@@ -1,3 +1,4 @@
+const { solveTrussModel, analyzeTrussScene } = globalThis.TVTrussSolver || {};
 const $=id=>document.getElementById(id);
 // Reversible Halloween HUD palette. Solver mathematics and scene data stay unchanged.
 const hudColor=(haunted,normal)=>document.body.classList.contains('haunted')?haunted:normal;
@@ -12,7 +13,7 @@ const demos={
  ,cable3d:{kind:'cable3d',spatial:true,title:'Spatial cable system / 3D vector demo',summary:'Three anchored cables stabilize a suspended joint. Drag to orbit and inspect force directions.',confidence:1,units:'m',forceUnit:'kN',nodes:[{id:'O',x:0,y:0,z:0,support:'none'},{id:'A',x:-3,y:3,z:2,support:'fixed'},{id:'B',x:3,y:2,z:-2,support:'fixed'},{id:'C',x:0,y:4,z:4,support:'fixed'}],members:[{a:'O',b:'A'},{a:'O',b:'B'},{a:'O',b:'C'}],loads:[{node:'O',fx:0,fy:-12,fz:0,label:'12 kN DOWN'}],pointLoads:[],distributedLoads:[],couples:[],shapes:[],dimensions:[],studySteps:['Sketch an FBD at the cable connection.','Determine cable unit vectors from anchor coordinates.','Set ΣFx=ΣFy=ΣFz=0 to solve cable tensions.'],warnings:['This demo illustrates 3D cable geometry; full cable-tension solution is not yet implemented.'],questions:[],explanation:'An orbiting 3D diagram helps students see x/y/z cable directions and how 3D force equilibrium differs from 2D.'},
  frame2d:{kind:'frame2d',spatial:false,title:'Pinned 2D articulated frame preview',summary:'Rigid frame with a distributed load and an internal pin. Geometry is interactive; reactions are not yet solved.',confidence:1,units:'ft',forceUnit:'lb',nodes:[{id:'A',x:0,y:0,z:0,support:'pin'},{id:'B',x:3,y:9,z:0,support:'none'},{id:'C',x:13,y:9,z:0,support:'pin'}],members:[{a:'A',b:'B'},{a:'B',b:'C'}],loads:[{node:'B',fx:180,fy:0,fz:0,label:'180 lb horizontal'}],pointLoads:[],distributedLoads:[],couples:[],shapes:[],dimensions:[{label:'10 ft',value:10}],studySteps:['Separate members at pin B.','Replace distributed loads with their equivalent resultants.','Write ΣM, ΣFx and ΣFy for each member.'],warnings:['Frame equilibrium solver not available; do not interpret the on-screen forces as solved reactions.'],questions:[],explanation:'A teaching example of a frame; inspect joint connectivity, external load directions and support conditions.'}
 };
-let scene=clone(demos.truss),original=clone(scene),mult=1,mode='select',show3d=false,showLabels=true,selected=null,buildStart=null,drag=null,hover=null,angle=.45,tilt=.46,orbitMix=0,orbitOn=true,orbitSpeed=0,orbitedAt=0,lastFrame=0,pan={x:0,y:0},zoom=1,view={cx:0,cy:0,s:30},solution=null,problem=null,source='demo';
+let scene=clone(demos.truss),original=clone(scene),mult=1,mode='select',show3d=false,showLabels=true,selected=null,buildStart=null,drag=null,hover=null,angle=.45,tilt=.46,orbitMix=0,orbitOn=true,orbitSpeed=0,orbitedAt=0,lastFrame=0,animationFrame=0,solveFrame=0,pan={x:0,y:0},zoom=1,view={cx:0,cy:0,s:30},solution=null,problem=null,source='demo';
 const canvas=$('stage'),ctx=canvas.getContext('2d');
 const safe=(x,def=0)=>Number.isFinite(Number(x))&&x!==null&&x!==''?Number(x):def;
 const fmt=(x,units='')=>Number.isFinite(x)?`${(Math.abs(x)<.0005?0:x).toFixed(Math.abs(x)>=100?1:2)}${units}`:'N/A';
@@ -21,6 +22,29 @@ const eligible=()=>['m','ft','in'].includes(scene.units) && ['kN','N','lb'].incl
 const lengthInM=()=>({m:1,ft:.3048,in:.0254}[scene.units]||1);
 const forceInKN=()=>({kN:1,N:.001,lb:.0044482216152605}[scene.forceUnit||'kN']||1);
 const forceLabel=()=>scene.forceUnit||'kN';
+const workflowIds=['workflowScan','workflowReview','workflowSolve'];
+function updateWorkflow(stage){
+ const index={scan:0,review:1,solve:2}[stage]??0;
+ workflowIds.forEach((id,i)=>{const el=$(id);if(!el)return;el.classList.toggle('active',i===index);el.classList.toggle('complete',i<index);});
+}
+function transferReason(){
+ if(scene.kind!=='beam'||scene.spatial)return 'Beam handoff is available for straight 2D beams only.';
+ if(!['m','ft','in'].includes(scene.units)||!['kN','N','lb'].includes(scene.forceUnit||'kN'))return 'Confirm real length and force units before handoff.';
+ if(scene.nodes.length!==2)return 'The handoff requires exactly two beam endpoints.';
+ const [a,b]=scene.nodes;
+ if(!Number.isFinite(a.x)||!Number.isFinite(b.x)||a.x===b.x||a.y!==b.y)return 'The handoff requires a horizontal beam with two different endpoints.';
+ if(!scene.nodes.some(n=>n.support&&n.support!=='none'))return 'Confirm at least one beam support before handoff.';
+ return '';
+}
+function updateTransferAvailability(){
+ const button=$('vetinExport'),note=$('vetinFeedback');if(!button)return;
+ const reason=transferReason();button.disabled=Boolean(reason);
+ if(note){note.textContent=reason||'Ready for review. The beam solver will open in a separate route.';note.style.color='';}
+}
+function scheduleSolve(){
+ if(solveFrame)return;
+ solveFrame=requestAnimationFrame(()=>{solveFrame=0;solveAndRender();});
+}
 function validate(s){
  if(!s || !['truss','beam','frame2d','force2d','friction2d','pulley2d','centroid2d','cable3d','vector3d','machine3d','other2d','unknown'].includes(s.kind))throw Error('Unsupported scene type.');
  if(!Array.isArray(s.nodes)||!Array.isArray(s.members)||s.nodes.length>45||s.members.length>75)throw Error('Invalid node/member arrays or too many elements.');
@@ -32,16 +56,17 @@ function validate(s){
 }
 function setScene(s,origin='demo'){
  scene=validate(clone(s));original=clone(scene);source=origin;selected=null;buildStart=null;zoom=1;pan={x:0,y:0};
- show3d=Boolean(scene.spatial||['cable3d','vector3d','machine3d'].includes(scene.kind));orbitOn=true;
+ show3d=Boolean(scene.spatial||['cable3d','vector3d','machine3d'].includes(scene.kind));orbitOn=true;if(show3d)ensureAnimation();
  $('threeD').disabled=!show3d;
  $('threeD').textContent=show3d?'◈ AUTO ORBIT: ON':'◈ 2D VIEW • LOCKED';
  $('sceneJson').value=JSON.stringify(scene,null,2);
  $('sceneTitle').textContent=scene.title||'UNNAMED DIAGRAM';
  $('explanation').textContent=scene.summary||scene.title||'Review the identified geometry and loading.';
+ updateWorkflow('review');
  solveAndRender();
 }
 function gauss(A,b){const n=b.length;A=A.map(r=>r.slice());b=b.slice();for(let k=0;k<n;k++){let pivot=k;for(let i=k+1;i<n;i++)if(Math.abs(A[i][k])>Math.abs(A[pivot][k]))pivot=i;if(Math.abs(A[pivot][k])<1e-10)throw Error('Mechanism, insufficient restraints or singular geometry.');[A[k],A[pivot]]=[A[pivot],A[k]];[b[k],b[pivot]]=[b[pivot],b[k]];const d=A[k][k];for(let j=k;j<n;j++)A[k][j]/=d;b[k]/=d;for(let i=0;i<n;i++){if(i===k)continue;const f=A[i][k];for(let j=k;j<n;j++)A[i][j]-=f*A[k][j];b[i]-=f*b[k];}}return b;}
-function solveTruss(){
+function solveTrussLegacy(){
  const ns=scene.nodes,N=ns.length,area=safe($('area').value,1200)*1e-6,E=safe($('elastic').value,200)*1e6,yieldMPa=safe($('yield').value,250);
  if(!area||!E||!yieldMPa)throw Error('Area, elastic modulus and yield stress must be positive.');
  if(scene.distributedLoads.length||scene.pointLoads.length||(scene.couples||[]).length)throw Error('Truss solver accepts joint loads only; member point/UDL loads require beam/frame modeling.');
@@ -59,6 +84,11 @@ function solveTruss(){
   const eqFx=appliedFx+reactions.reduce((v,r)=>v+r.rx,0),eqFy=appliedFy+reactions.reduce((v,r)=>v+r.ry,0);
   const eqM=scene.loads.reduce((v,l)=>{const n=node(l.node);return v+(n.x*safe(l.fy)-n.y*safe(l.fx))*mult*forceInKN();},0)+reactions.reduce((v,r)=>{const n=node(r.id);return v+n.x*r.ry-n.y*r.rx;},0);
   return {type:'truss',equilibrium:{fx:eqFx,fy:eqFy,m:eqM},forces,reactions,maxUtil:Math.max(0,...forces.map(f=>f.util)),maxDisp:Math.max(...ns.map((_,i)=>Math.hypot(u[i*2],u[i*2+1])))*1000};
+}
+function solveTruss(){
+ const review=analyzeTrussScene(scene);
+ if(review.warnings.length && scene.confidence < 1) throw Error(review.warnings[0]);
+ return solveTrussModel(scene,{areaMm2:safe($('area').value,1200),elasticGPa:safe($('elastic').value,200),yieldMPa:safe($('yield').value,250),multiplier:mult});
 }
 function solveBeam(){
  if(scene.members.length!==1||scene.nodes.length!==2)throw Error('Beam engine currently supports one straight, simply supported span.');
@@ -97,6 +127,7 @@ function solveAndRender(){
   else if(show3d)solution=solveSpatialVectors();
   else throw Error('This topic can be visualized, but its specialized physics solver is not implemented yet.');
  }catch(e){problem=e.message;}
+ updateWorkflow(solution?'solve':'review');
  renderInformation();draw();
 }
 // Units: truss reactions and member forces are solved internally in kN.
@@ -189,6 +220,7 @@ function renderInformation(){
  $('solverBadge').style.color=source==='demo'&&solution?'var(--green)':'var(--amber)';
  renderForceTelemetry();
  renderStudentAnalysis();
+ updateTransferAvailability();
  $('results').replaceChildren();const r=$('results');
  const line=(a,b,invalid=false)=>{const d=document.createElement('div');if(invalid)d.className='invalid';const label=document.createElement('strong');label.textContent=a+': ';d.append(label,document.createTextNode(b));r.append(d);};
  line('Topic',scene.summary||scene.title||'Unknown');
@@ -210,7 +242,8 @@ function renderInformation(){
  }
  for(const step of (scene.studySteps||[]).slice(0,5))line('Learning step',step);
  line('Source',source==='demo'?'Original demo':'AI-generated interpretation; values may be inaccurate. Inspect before relying on any result.');
- const notes=[...(scene.warnings||[]),...(scene.questions||[]).map(q=>'Confirm: '+q)];
+ const reviewWarnings=scene.kind==='truss'?analyzeTrussScene(scene).warnings:[];
+ const notes=[...new Set([...(scene.warnings||[]),...reviewWarnings,...(scene.questions||[]).map(q=>'Confirm: '+q),...(problem&&scene.kind==='truss'?[`Review geometry & supports: ${problem} Use ADVANCED INPUT to correct the extracted topology before solving.`]:[])])];
  $('warnings').replaceChildren();for(const w of notes){const n=document.createElement('div');n.className='note';n.textContent='⚠ '+w;$('warnings').append(n);}
 }
 // Equilibrium always governs a body at rest: unknown reactions must be included.
@@ -334,12 +367,22 @@ function draw(){
 }
 const pos=e=>{const r=canvas.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top};};
 function hit(p){let result=null,dist=16;for(const n of scene.nodes){const q=project(n),d=Math.hypot(p.x-q.x,p.y-q.y);if(d<dist){dist=d;result=n.id;}}return result;}
-canvas.addEventListener('pointerdown',e=>{canvas.setPointerCapture(e.pointerId);const p=pos(e),id=hit(p);if(mode==='delete'&&id){scene.members=scene.members.filter(m=>m.a!==id&&m.b!==id);scene.loads=scene.loads.filter(l=>l.node!==id);scene.nodes=scene.nodes.filter(n=>n.id!==id);sync();return;}if(mode==='build'){if(!id)return;if(!buildStart){buildStart=id;}else if(buildStart!==id&&!scene.members.some(m=>(m.a===buildStart&&m.b===id)||(m.a===id&&m.b===buildStart))){scene.members.push({a:buildStart,b:id});buildStart=null;sync();}else buildStart=null;draw();return;}if(mode==='load'&&id){const exists=scene.loads.find(l=>l.node===id);const answer=prompt(`Vertical force at ${id} in ${forceLabel()} (negative=down, 0=remove):`,String(exists?.fy??-20));if(answer!==null&&answer.trim()!==''&&Number.isFinite(Number(answer))){scene.loads=scene.loads.filter(l=>l.node!==id);if(Number(answer)!==0)scene.loads.push({node:id,fx:0,fy:Number(answer),fz:0,label:`${Math.abs(Number(answer))} ${forceLabel()}`});sync();}return;}selected=id;drag={p,start:pos(e),id,pan:{...pan},angle,tilt,original:id?{...node(id)}:null};draw();});
-canvas.addEventListener('pointermove',e=>{if(!drag)return;const p=pos(e),dx=p.x-drag.start.x,dy=p.y-drag.start.y;if(drag.id&&!show3d&&mode==='select'){const n=node(drag.id);n.x=drag.original.x+dx/view.s;n.y=drag.original.y-dy/view.s;solveAndRender();}else if(show3d){angle=drag.angle+dx/145;tilt=Math.max(-1.1,Math.min(1.15,drag.tilt+dy/250));orbitedAt=performance.now();draw();}else if(!drag.id){pan.x=drag.pan.x+dx;pan.y=drag.pan.y+dy;draw();}});
+const loadDialog=$('loadDialog'),loadValue=$('loadValue'),loadUnit=$('loadUnit');let pendingLoadNode=null;
+function openLoadDialog(id){
+ pendingLoadNode=id;const exists=scene.loads.find(l=>l.node===id);loadValue.value=String(exists?.fy??-20);loadUnit.textContent=forceLabel();showError('');
+ if(typeof loadDialog.showModal==='function'){loadDialog.showModal();loadValue.focus();}else loadValue.focus();
+}
+loadDialog?.addEventListener('close',()=>{
+ if(loadDialog.returnValue!=='apply'||!pendingLoadNode)return;
+ const value=Number(loadValue.value);if(!Number.isFinite(value)){showError('Enter a valid numeric load.');return;}
+ scene.loads=scene.loads.filter(l=>l.node!==pendingLoadNode);if(value!==0)scene.loads.push({node:pendingLoadNode,fx:0,fy:value,fz:0,label:`${Math.abs(value)} ${forceLabel()}`});pendingLoadNode=null;sync();
+});
+canvas.addEventListener('pointerdown',e=>{canvas.setPointerCapture(e.pointerId);const p=pos(e),id=hit(p);if(mode==='delete'&&id){scene.members=scene.members.filter(m=>m.a!==id&&m.b!==id);scene.loads=scene.loads.filter(l=>l.node!==id);scene.nodes=scene.nodes.filter(n=>n.id!==id);sync();return;}if(mode==='build'){if(!id)return;if(!buildStart){buildStart=id;}else if(buildStart!==id&&!scene.members.some(m=>(m.a===buildStart&&m.b===id)||(m.a===id&&m.b===buildStart))){scene.members.push({a:buildStart,b:id});buildStart=null;sync();}else buildStart=null;draw();return;}if(mode==='load'&&id){openLoadDialog(id);return;}selected=id;drag={p,start:pos(e),id,pan:{...pan},angle,tilt,original:id?{...node(id)}:null};draw();});
+canvas.addEventListener('pointermove',e=>{if(!drag)return;const p=pos(e),dx=p.x-drag.start.x,dy=p.y-drag.start.y;if(drag.id&&!show3d&&mode==='select'){const n=node(drag.id);n.x=drag.original.x+dx/view.s;n.y=drag.original.y-dy/view.s;scheduleSolve();}else if(show3d){angle=drag.angle+dx/145;tilt=Math.max(-1.1,Math.min(1.15,drag.tilt+dy/250));orbitedAt=performance.now();draw();}else if(!drag.id){pan.x=drag.pan.x+dx;pan.y=drag.pan.y+dy;draw();}});
 canvas.addEventListener('pointerup',()=>{if(drag?.id)sync();drag=null;});canvas.addEventListener('pointercancel',()=>{drag=null;});canvas.addEventListener('wheel',e=>{e.preventDefault();zoom=Math.max(.25,Math.min(5,zoom*(e.deltaY>0?.9:1.1)));draw();},{passive:false});
 function sync(){try{validate(scene);}catch(e){showError(e.message);} $('sceneJson').value=JSON.stringify(scene,null,2);solveAndRender();}
 function showError(t){$('error').hidden=!t;$('error').textContent=t||'';}
-document.querySelectorAll('[data-mode]').forEach(btn=>btn.addEventListener('click',()=>{mode=btn.dataset.mode;buildStart=null;document.querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('on',b===btn));$('modeInfo').textContent={select:show3d?'Drag to orbit the spatial model; scroll to zoom.':'Drag joints to move them, pan blank space, wheel to zoom.',load:'Click a joint to set a vertical load in kN.',build:'Click two joints to add a member.',delete:'Click a joint to delete it and its attached members.'}[mode];draw();}));
+document.querySelectorAll('[data-mode]').forEach(btn=>btn.addEventListener('click',()=>{mode=btn.dataset.mode;buildStart=null;document.querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('on',b===btn));$('modeInfo').textContent={select:show3d?'Drag to orbit the spatial model; scroll to zoom.':'Drag joints to move them, pan blank space, wheel to zoom.',load:`Click a joint to set a vertical load in ${forceLabel()}.`,build:'Click two joints to add a member.',delete:'Click a joint to delete it and its attached members.'}[mode];draw();}));
 $('threeD').onclick=()=>{if(!show3d)return;orbitOn=!orbitOn;$('threeD').textContent=`◈ AUTO ORBIT: ${orbitOn?'ON':'PAUSED'}`;draw();};$('fit').onclick=()=>{zoom=1;pan={x:0,y:0};draw();};$('labels').onclick=()=>{showLabels=!showLabels;$('labels').classList.toggle('on',showLabels);draw();};
 $('multiplier').oninput=e=>{mult=Number(e.target.value)/100;$('multiplierLabel').textContent=mult.toFixed(2)+'×';solveAndRender();};for(const id of ['area','elastic','yield'])$(id).addEventListener('input',solveAndRender);
 $('loadDemo').onclick=()=>{mult=1;$('multiplier').value=100;$('multiplierLabel').textContent='1.00×';setScene(demos[$('example').value]);showError('');};$('reset').onclick=()=>{setScene(original,source);showError('');};$('applyJson').onclick=()=>{try{const s=JSON.parse($('sceneJson').value);setScene(s,'edited');showError('');}catch(e){showError(`Invalid scene: ${e.message}`);}};
@@ -350,7 +393,7 @@ function useFile(file){
  if(!['image/png','image/jpeg','image/webp','application/pdf'].includes(file.type)){showError('Please select a JPG, PNG, WebP or PDF.');return;}
   if(file.type==='application/pdf'&&file.size>3*1024*1024){showError('PDF must be under 3 MB. For a multi-page exam, screenshot one question as JPG.');return;}
  if(file.type!=='application/pdf'&&file.size>22*1024*1024){showError('Please choose an image under 22 MB.');return;}
- currentFile=file;$('analyze').disabled=false;
+ currentFile=file;$('analyze').disabled=false;updateWorkflow('scan');
  if(file.type==='application/pdf'){sourceImage=null;$('thumb').hidden=true;$('latency').textContent='PDF ready • upload one problem/page for best accuracy';}
  else{const reader=new FileReader();reader.onload=()=>{$('thumb').src=reader.result;$('thumb').hidden=false;sourceImage=new Image();sourceImage.onload=()=>draw();sourceImage.src=reader.result;};reader.readAsDataURL(file);$('latency').textContent='Press SCAN to begin';}
  $('status').textContent='● LOADED';
@@ -377,18 +420,21 @@ async function shrinkImage(file){
 }
 let scanStarted=0,scanTick;
 async function requestSceneAnalysis(encoded){
- const payload={apiKey:$('apiKey').value,model:$('model').value,...encoded,detailed:$('detailed')?.checked||false};
+ const payload={model:$('model').value,...encoded,detailed:$('detailed')?.checked||false};
+ const directPayload={apiKey:$('apiKey').value,...payload};
+ const serverPayload={model:payload.model,base64:payload.base64,mimeType:payload.mimeType,detailed:payload.detailed};
  // Netlify deployments use the same-origin function. GitHub Pages and a
  // static Python server return 404, so fall back to the browser Gemini adapter.
  const apiUrl=new URL('../api/analyze',location.href);
  try{
-  const response=await fetch(apiUrl,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  const response=await fetch(apiUrl,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(serverPayload)});
   // Python's http.server returns 501 for POST; GitHub Pages commonly returns
   // 404. All three statuses mean there is no same-origin function to use.
   if(![404,405,501].includes(response.status)){
    const data=await response.json().catch(()=>({error:'The analysis API returned unreadable data.'}));
-   if(!response.ok)throw Error(data.error||`Scan HTTP ${response.status}`);
-   return data;
+   if(!response.ok){
+    if(data.code!=='SERVER_NOT_CONFIGURED')throw Error(data.error||`Scan HTTP ${response.status}`);
+   }else return data;
   }
  }catch(error){
   // Only network failure is eligible for the static-host fallback. A real
@@ -397,19 +443,19 @@ async function requestSceneAnalysis(encoded){
  }
  if(!window.TVGemini?.analyze)throw Error('AI scanning is unavailable right now. Check your key and try again.');
  $('latency').textContent='Reading diagram…';
- return window.TVGemini.analyze(payload);
+ return window.TVGemini.analyze(directPayload);
 }
 $('analyze').onclick=async()=>{
  if(!currentFile)return;
  showError('');$('analyze').disabled=true;$('status').textContent='● SCANNING';$('drop').classList.add('scanning');
  scanStarted=performance.now();$('latency').textContent='Preparing photo…';
- scanTick=setInterval(()=>{$('latency').textContent=`Gemini working… ${Math.floor((performance.now()-scanStarted)/1000)}s`;},250);
+ scanTick=setInterval(()=>{$('latency').textContent=`AI working… ${Math.floor((performance.now()-scanStarted)/1000)}s`;},250);
  try{
   const encoded=await shrinkImage(currentFile);
   const data=await requestSceneAnalysis(encoded);
   setScene(data.scene,'ai');$('status').textContent='● PARSED';
   $('latency').textContent=`Extracted in ${((performance.now()-scanStarted)/1000).toFixed(1)}s • ${scene.kind.toUpperCase()} • ${show3d?'3D':'2D'}`;
- }catch(err){$('status').textContent='● ERROR';showError(err.message);$('latency').textContent='Analysis failed — review error';}
+ }catch(err){$('status').textContent='● ERROR';updateWorkflow('scan');showError(err.message);$('latency').textContent='Analysis failed — review error';}
  finally{clearInterval(scanTick);$('drop').classList.remove('scanning');$('analyze').disabled=false;}
 };
 function animate(ts){
@@ -420,6 +466,7 @@ function animate(ts){
  const wantedSpeed=show3d&&orbitOn&&!drag&&ts-orbitedAt>2400?.32:0;
  orbitSpeed+=(wantedSpeed-orbitSpeed)*Math.min(1,dt*3.6);angle+=dt*orbitSpeed;
  if(show3d||orbitMix>.002)draw();
- requestAnimationFrame(animate);
+ if(show3d||Math.abs(orbitMix-target)>.002)animationFrame=requestAnimationFrame(animate);else{animationFrame=0;lastFrame=0;}
 }
-new ResizeObserver(resize).observe(canvas);setScene(demos.truss);resize();requestAnimationFrame(animate);
+function ensureAnimation(){if(!animationFrame)animationFrame=requestAnimationFrame(animate);}
+new ResizeObserver(resize).observe(canvas);setScene(demos.truss);resize();if(show3d)ensureAnimation();

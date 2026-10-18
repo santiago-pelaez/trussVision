@@ -73,3 +73,20 @@ body.haunted .scanning:after{background:#b8ff9f;box-shadow:0 0 20px #a1ff8f}
 .advanced-details summary::after{content:'+';float:right;font-size:14px;line-height:10px;}
 .advanced-details[open] summary::after{content:'−';}
 .advanced-body{padding:0 12px 12px;}
+
+/* Guided-workbench skin. */
+body.haunted .workflow-step{background:#140d24;border-color:#69436f;color:#bda5ca}
+body.haunted .workflow-step.active,body.haunted .workflow-step.complete{border-color:#a5fd81;box-shadow:inset 0 -2px #a5fd81,0 0 13px #9dff7b1f}
+body.haunted .workflow-step.active strong,body.haunted .workflow-step.complete strong{color:#c6ff96}
+body.haunted .workflow-step.complete span{color:#a5fd81}
+body.haunted .section-intro{color:#bba4cb}
+body.haunted .settings-details summary{background:#20122e;border-color:#805175;color:#ffbf7a}
+body.haunted .settings-body{background:#180d28;border-color:#805175;box-shadow:0 14px 35px #000b}
+body.haunted .settings-body label{color:#ffbf7a}
+body.haunted .settings-body small{color:#bba4cb}
+body.haunted .app-dialog{background:#180d28;border-color:#9a5b7c;color:#f8eafa}
+body.haunted .app-dialog::backdrop{background:#080612c9}
+body.haunted .dialog-card h2{color:#ffb668}
+body.haunted .dialog-card label{color:#efc4e6}
+body.haunted .dialog-warning{color:#f0bc8f}
+body.haunted #vetinExport:disabled{opacity:.42;color:#bba4cb;border-color:#69436f;background:#24182d;box-shadow:none}

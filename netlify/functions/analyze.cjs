@@ -70,8 +70,8 @@ exports.handler=async event=>{
  try{
   if((event.body||'').length>5.4*1024*1024)return json(413,{error:'Image too large for Netlify. Try a cropped JPG screenshot.'});
   let body;try{body=JSON.parse(event.body||'{}');}catch{return json(400,{error:'Invalid request.'});}
-  const key=(process.env.GEMINI_API_KEY||(typeof body.apiKey==='string'?body.apiKey:'')).trim();
-  if(!key)return json(400,{error:'Enter your Google AI Studio key into GEMINI AUTH (or set GEMINI_API_KEY on Netlify).'});
+  const key=String(process.env.GEMINI_API_KEY||'').trim();
+  if(!key)return json(400,{code:'SERVER_NOT_CONFIGURED',error:'The server AI service is not configured.'});
   const model=body.model||'gemini-3.8-flash';if(!MODELS.has(model))return json(400,{error:'Unsupported model choice.'});
   const mt=body.mimeType;if(!['image/jpeg','image/png','image/webp','application/pdf'].includes(mt))return json(400,{error:'Upload JPG, PNG, WebP or a small PDF.'});
   if(typeof body.base64!=='string'||body.base64.length<50||body.base64.length>5*1024*1024||!/^[a-zA-Z0-9+/=]+$/.test(body.base64))return json(400,{error:'Invalid or oversized image.'});

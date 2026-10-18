@@ -55,7 +55,7 @@ review and visualization workflow.
 | [`trussvision/vetin-export.js`](trussvision/vetin-export.js) | Converts reviewed TrussVision beam scenes to Vetin model v2 JSON |
 | [`trussvision/gemini-client.js`](trussvision/gemini-client.js) | Direct Gemini fallback for local static servers and GitHub Pages |
 | [`netlify/functions/analyze.cjs`](netlify/functions/analyze.cjs) | Optional server-side Gemini endpoint for Netlify deployments |
-| [`tests/`](tests/) | Vetin solver, file-format, bridge, and deployment integrity tests |
+| [`tests/`](tests/) | Vetin regression and TrussVision contract tests |
 
 ## Quick start: local testing
 
@@ -95,13 +95,31 @@ Run the full existing test suite from the repository root:
 
 ```powershell
 node tests\run-tests.js
+node tests\trussvision-checks.js
+node tools\check-deploy.js
 git diff --check
 ```
 
 The test suite covers the beam solver, reactions, internal-force diagrams,
 elastic curves, determinacy checks, practice problems, model-file conversion,
 embedded example models, service-worker deployment integrity, and the
-TrussVision/Vetin adapter.
+TrussVision/Vetin adapter. The TrussVision contract checks cover the guided
+workflow, in-app dialogs, static-host scan fallback, server-key boundary, and
+beam handoff rules.
+
+## Development architecture
+
+TrussVision is intentionally framework-free so the same files work on GitHub
+Pages and through `py -3 -m http.server`. The public interface is kept in
+`trussvision/`; its app module owns scene state, deterministic previews, and
+canvas interaction. The Gemini adapter and Vetin converter are separate
+boundaries so they can be tested without loading the full UI.
+
+The original Vetin runtime remains isolated under `vetin/`. It is not part of
+normal navigation and opens only after TrussVision converts a reviewed,
+dimensioned horizontal beam into Vetin model v2 data. The optional Netlify
+function accepts only the server-side `GEMINI_API_KEY`; local static servers
+and GitHub Pages use the session-only browser fallback when necessary.
 
 ## Deployment
 
@@ -141,9 +159,10 @@ of the browser:
 - Build command: leave blank
 - Environment variable: `GEMINI_API_KEY`
 
-When the function is available, TrussVision uses `/api/analyze`. If the
-function is unavailable, the application falls back to the direct browser
-adapter for local or static hosting.
+When the function is available, TrussVision uses `/api/analyze`. The function
+reads only `GEMINI_API_KEY` from Netlify environment variables. If the
+function is unavailable or not configured, the application falls back to the
+direct browser adapter for local or static hosting.
 
 ## Important limitations
 
@@ -179,7 +198,8 @@ trussVision/
 |   |-- vetin-export.js         Reviewed beam to Vetin model conversion
 |   `-- style files             TrussVision visual system
 |-- netlify/functions/          Optional Gemini server function
-|-- tests/                      Automated regression and integration checks
+|-- tests/                      Vetin regression and TrussVision contract checks
+|-- .github/workflows/          CI checks for pushes and pull requests
 `-- LICENSE                     Original MIT license
 ```
 

@@ -31,3 +31,35 @@
 .force-negative{color:#ffc968}
 .telemetry-caption{font-size:9px;line-height:1.55;color:#79aabb;margin:0 0 8px}
 .telemetry-empty{border:1px dashed #24546b;padding:12px 9px;color:#8da8b9;font-size:10px;line-height:1.55;border-radius:5px}
+
+/* Guided workbench controls. These remain framework-free for GitHub Pages and
+   the local Python server. */
+.workflow{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.workflow-step{display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:9px;align-items:center;padding:10px 13px;border:1px solid var(--border);border-radius:8px;background:#061522;color:var(--muted);opacity:.72}
+.workflow-step span{grid-row:1 / span 2;color:var(--muted);font:700 16px Orbitron,sans-serif}
+.workflow-step strong{font:700 10px Orbitron,sans-serif;letter-spacing:.5px}
+.workflow-step small{font-size:9px;margin-top:3px}
+.workflow-step.active,.workflow-step.complete{opacity:1;border-color:var(--cyan);box-shadow:inset 0 -2px var(--cyan)}
+.workflow-step.active strong,.workflow-step.complete strong{color:var(--cyan)}
+.workflow-step.complete span{color:var(--green)}
+.section-intro{margin:-4px 0 10px;color:var(--muted);font-size:10px;line-height:1.55}
+.settings-details{position:relative;min-width:250px}
+.settings-details summary{cursor:pointer;color:var(--cyan);border:1px solid var(--border);border-radius:5px;padding:9px 11px;font-size:10px;font-weight:700;list-style:none}
+.settings-details summary::-webkit-details-marker{display:none}
+.settings-details summary::after{content:'+';float:right;font-size:13px}
+.settings-details[open] summary::after{content:'−'}
+.settings-body{position:absolute;z-index:6;right:0;top:43px;width:290px;padding:12px;background:#061522;border:1px solid var(--border);border-radius:7px;box-shadow:0 12px 35px #0008;display:grid;gap:7px}
+.settings-body label{color:var(--cyan);font-size:9px;font-weight:700}
+.settings-body input,.settings-body select{width:100%}
+.settings-body small{color:var(--muted);font-size:9px;line-height:1.5}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible,canvas:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+button:disabled{cursor:not-allowed}
+.app-dialog{border:1px solid var(--border);border-radius:10px;padding:0;background:#061522;color:#c6eff9;max-width:min(430px,calc(100vw - 32px));width:100%;box-shadow:0 18px 60px #000b}
+.app-dialog::backdrop{background:#020813b8;backdrop-filter:blur(3px)}
+.dialog-card{padding:22px}
+.dialog-card h2{margin:0 0 8px;color:var(--cyan);font:700 15px Orbitron,sans-serif}
+.dialog-card label{display:block;color:#a1dbeb;font-size:10px;margin-top:12px}
+.dialog-card input{width:100%;margin-top:7px}
+.dialog-warning{margin:0;color:var(--amber);font-size:10px;line-height:1.6}
+.dialog-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+@media(max-width:730px){.workflow{grid-template-columns:1fr}.workflow-step{grid-template-columns:auto 1fr}.settings-details{width:100%}.settings-body{position:static;width:100%;margin-top:7px}.header-actions{width:100%}.header-actions button{flex:1}.dialog-actions{flex-direction:column-reverse}.dialog-actions button{width:100%}}

@@ -91,6 +91,22 @@ function checkDeploy(root = ROOT) {
         if (entry.root === 'trussvision' && /<a\b[^>]*\bhref=["'][^"']*vetin/i.test(html)) {
             errors.push('trussvision/index.html contains a direct Vetin link');
         }
+        if (entry.root === 'trussvision') {
+            const app = fs.readFileSync(path.join(root, 'trussvision', 'app.js'), 'utf8');
+            const exporter = fs.readFileSync(path.join(root, 'trussvision', 'vetin-export.js'), 'utf8');
+            if (/Netlify uses the server function when available/i.test(html)) {
+                errors.push('trussvision/index.html contains the retired deployment warning');
+            }
+            if (/\b(prompt|confirm|alert)\s*\(/.test(app + exporter)) {
+                errors.push('TrussVision still uses a browser-native dialog');
+            }
+            if (!/id="workflowScan"/.test(html) || !/id="workflowReview"/.test(html) || !/id="workflowSolve"/.test(html)) {
+                errors.push('trussvision/index.html is missing the guided workflow');
+            }
+            if (!/id="loadDialog"/.test(html) || !/id="transferDialog"/.test(html)) {
+                errors.push('trussvision/index.html is missing the in-app dialogs');
+            }
+        }
         if (entry.root === 'vetin' && !/tvimport/.test(html)) {
             errors.push('vetin/index.html is missing the explicit handoff guard');
         }
