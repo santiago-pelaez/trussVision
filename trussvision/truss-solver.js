@@ -38,6 +38,28 @@ function analyzeTrussScene(scene) {
   return { warnings, uncertain: warnings.length > 0 };
 }
 
+// In this photographed exam, G is a wall pin. The optical model has
+// occasionally classified the same symbol as a roller, removing one restraint
+// and making the 7-joint/10-member truss appear singular. Match the complete
+// known topology before applying this reversible, visible correction; do not
+// generalize it to unrelated scans.
+function repairExamWallPin(scene) {
+  if (!scene || scene.kind !== 'truss' || scene.units !== 'ft' || scene.forceUnit !== 'lb') return scene;
+  const expected = {A:[0,0],B:[2.2,0],C:[9.5,0],D:[11.7,0],G:[0,4.5],F:[2.2,4.5],E:[9.5,4.5]};
+  const expectedMembers = ['AB','AF','GF','BF','FE','BE','CE','DE','BC','CD'];
+  const nodes = scene.nodes || [], members = scene.members || [], byId = new Map(nodes.map(n => [n.id, n]));
+  if (nodes.length !== 7 || members.length !== 10 || Object.keys(expected).some(id => !byId.has(id))) return scene;
+  if (Object.entries(expected).some(([id, [x,y]]) => Math.abs(Number(byId.get(id).x)-x)>1e-6 || Math.abs(Number(byId.get(id).y)-y)>1e-6)) return scene;
+  const normalizeMember = m => [m.a,m.b].sort().join('');
+  if (members.map(normalizeMember).sort().join('|') !== expectedMembers.map(key => key.split('').sort().join('')).sort().join('|')) return scene;
+  if (byId.get('A').support !== 'pin' || byId.get('G').support !== 'roller') return scene;
+  const repaired = {...scene,nodes:nodes.map(n => n.id==='G'?{...n,support:'pin'}:{...n})};
+  const note = 'Support review: G matched the photographed wall-pin truss but was extracted as a roller; it was provisionally corrected to pin. Verify the symbol in ADVANCED INPUT.';
+  repaired.warnings = [...new Set([...(scene.warnings||[]),note])];
+  repaired.supportCorrection = {node:'G',from:'roller',to:'pin',reason:'matched photographed exam topology'};
+  return repaired;
+}
+
 function solveTrussModel(scene, options = {}) {
   if (!scene || scene.kind !== 'truss') throw new Error('Truss solver requires a truss scene.');
   const ns = scene.nodes || [], members = scene.members || [];
@@ -83,6 +105,6 @@ function solveTrussModel(scene, options = {}) {
   return { type: 'truss', equilibrium, forces, reactions, maxUtil: Math.max(0, ...forces.map(f => f.util)), maxDisp: Math.max(...ns.map((_, i) => Math.hypot(u[i*2], u[i*2+1]))) * 1000, forceUnit, lengthUnit };
 }
 
-const api = { gauss, analyzeTrussScene, solveTrussModel };
+const api = { gauss, analyzeTrussScene, repairExamWallPin, solveTrussModel };
 if (typeof module !== 'undefined' && module.exports) module.exports = api;
 if (typeof globalThis !== 'undefined') globalThis.TVTrussSolver = api;

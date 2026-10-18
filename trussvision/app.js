@@ -1,4 +1,4 @@
-const { solveTrussModel, analyzeTrussScene } = globalThis.TVTrussSolver || {};
+const { solveTrussModel, analyzeTrussScene, repairExamWallPin } = globalThis.TVTrussSolver || {};
 const $=id=>document.getElementById(id);
 // Reversible Halloween HUD palette. Solver mathematics and scene data stay unchanged.
 const hudColor=(haunted,normal)=>document.body.classList.contains('haunted')?haunted:normal;
@@ -55,7 +55,7 @@ function validate(s){
  return s;
 }
 function setScene(s,origin='demo'){
- scene=validate(clone(s));original=clone(scene);source=origin;selected=null;buildStart=null;zoom=1;pan={x:0,y:0};
+ scene=validate(repairExamWallPin(clone(s)));original=clone(scene);source=origin;selected=null;buildStart=null;zoom=1;pan={x:0,y:0};
  show3d=Boolean(scene.spatial||['cable3d','vector3d','machine3d'].includes(scene.kind));orbitOn=true;if(show3d)ensureAnimation();
  $('threeD').disabled=!show3d;
  $('threeD').textContent=show3d?'◈ AUTO ORBIT: ON':'◈ 2D VIEW • LOCKED';

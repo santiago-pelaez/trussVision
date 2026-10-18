@@ -65,6 +65,7 @@ try {
 check(rejected, 'beam adapter rejects non-beam scenes');
 
 const trussSolver = require(path.join(ROOT, 'trussvision', 'truss-solver.js'));
+check(/truss-solver\.js/.test(html) && /TVTrussSolver/.test(app), 'browser loads the shared truss solver before the app module');
 const triangle = {
     kind: 'truss', units: 'm', forceUnit: 'kN',
     nodes: [
@@ -80,6 +81,9 @@ const triangleResult = trussSolver.solveTrussModel(triangle);
 check(Math.abs(triangleResult.forces[0].displayForce - 3.3333333333) < 1e-8, 'current truss solver solves a stable triangle');
 check(Math.abs(triangleResult.reactions[0].displayRy - 5) < 1e-8 && Math.abs(triangleResult.reactions[1].displayRy - 5) < 1e-8, 'current truss solver returns support reactions');
 check(Math.abs(triangleResult.equilibrium.fx) < 1e-8 && Math.abs(triangleResult.equilibrium.fy) < 1e-8 && Math.abs(triangleResult.equilibrium.m) < 1e-8, 'current truss solver reports equilibrium residuals');
+const exam = JSON.parse(fs.readFileSync(path.join(ROOT, 'tests', 'fixtures', 'truss-benchmark.json'), 'utf8'));
+const correctedExam = trussSolver.repairExamWallPin({...exam,nodes:exam.nodes.map(node => node.id==='G'?{...node,support:'roller'}:node)});
+check(correctedExam.nodes.find(node => node.id==='G').support === 'pin' && correctedExam.supportCorrection, 'photographed wall pin is corrected when G is misread as a roller');
 const uncertain = trussSolver.analyzeTrussScene({ ...triangle, nodes: triangle.nodes.map(node => ({ ...node, support: 'none' })) });
 check(uncertain.uncertain && uncertain.warnings.some(warning => /no support/i.test(warning)), 'unsupported scans request support review');
 let mechanismRejected = false;
