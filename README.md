@@ -1,5 +1,6 @@
 # TrussVision
-
+Try it out here:
+https://santiago-pelaez.github.io/trussVision/trussvision/
 ## AI-assisted structural statics for the Trick or Treat Hackathon
 
 TrussVision turns a statics diagram into an editable structural scene. Upload a
