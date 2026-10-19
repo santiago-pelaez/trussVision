@@ -104,5 +104,17 @@ const sanitized = geminiSandbox.TVGemini.sanitize({
 });
 check(sanitized.kind === 'beam' && sanitized.nodes.length === 2 && Array.isArray(sanitized.warnings), 'AI scene sanitizer returns bounded scene data');
 
+// Regression checks for publish-ready security, scene types and load export.
+const client = read('trussvision/gemini-client.js');
+check(!/generateContent\?key=/.test(client) && /'x-goog-api-key': apiKey/.test(client), 'personal Gemini key is sent via header, never URL query');
+check(/const next=validate\(repairExamWallPin\(clone\(s\)\)\);scene=next/.test(app), 'invalid edits validate before updating active scene');
+const spring = geminiSandbox.TVGemini.sanitize({kind:'spring2d',nodes:[],members:[],loads:[]});
+check(spring.kind === 'spring2d', 'static-host AI sanitizer recognizes spring scenes');
+const horizontal = adapter.convert({...beam, pointLoads:[{x:5,fx:100,fy:0}]});
+check(horizontal.concentratedLoads.length === 1 && horizontal.concentratedLoads[0].angle === 0 &&
+  Math.abs(horizontal.concentratedLoads[0].magnitude-0.444822)<1e-6, 'beam export retains horizontal point-load component');
+check(/role="button" tabindex="0"/.test(html) && /key==='Enter'\|\|event.key===' '/.test(app), 'upload area supports keyboard interaction');
+check(/aistudio.google.com\/apikey/.test(html) && /PUBLISHING_GUIDE.md/.test(read('README.md')), 'onboarding links to the correct key page and publishing guide');
+
 console.log(`\nTrussVision result: ${passed} passed, ${failed} failed\n`);
 process.exit(failed ? 1 : 0);

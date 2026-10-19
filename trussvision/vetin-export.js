@@ -33,7 +33,7 @@
       // Vetin angle is clockwise from +X: downward corresponds to +90 deg.
       concentratedLoads.push({x:at(x),magnitude:round(Math.hypot(fx,fy)*ff),angle:round(Math.atan2(-fy,fx))});
     }
-    for(const p of (scene.pointLoads||[]))addForce(p.x,0,p.fy);
+    for(const p of (scene.pointLoads||[]))addForce(p.x,p.fx||0,p.fy);
     const nodesById=new Map(ns.map(n=>[n.id,n]));
     for(const f of (scene.loads||[])){
       const n=nodesById.get(f.node);if(!n)throw Error('Force references missing node '+f.node);

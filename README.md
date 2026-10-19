@@ -1,226 +1,94 @@
 # TrussVision
-Try it out here:
-https://santiago-pelaez.github.io/trussVision/trussvision/
-## AI-assisted structural statics for the Trick or Treat Hackathon
 
-TrussVision turns a statics diagram into an editable structural scene. Upload a
-clear image, review the detected geometry and loads, run the deterministic
-structural preview, and send a verified compatible beam to the original Vetin
-beam solver.
+**AI-assisted statics diagram review and deterministic mechanics practice.**
 
-This repository is a TrussVision project built on top of the MIT-licensed Vetin
-Beam Analysis application. TrussVision is the public application at the site
-root, with the direct `/trussvision/` route kept available for static hosts.
-The preserved Vetin solver lives under `/vetin/` and is opened only by an
-explicit reviewed-beam handoff.
+Built by **Azhan Mohammed and Santiago Pelaez** for **CrimsonCode: Hacktoberfest 2026**, hosted by **ACM at Washington State University**. The team placed **5th** (team-reported). The event follows Major League Hacking's Code of Conduct; it is not accurate to describe MLH as the sole event organizer.
 
-## What the project does
+**Live demo (team repository):** https://santiago-pelaez.github.io/trussVision/trussvision/  
+**Source (team repository):** https://github.com/santiago-pelaez/trussVision  
+**Get a Google AI Studio API key:** https://aistudio.google.com/apikey
 
-1. Upload a statics diagram or load one of the built-in demonstrations.
-2. Ask Gemini to identify the problem type, dimensions, supports, loads, and
-   other visible values.
-3. Inspect and edit the proposed scene before solving it.
-4. Use TrussVision's deterministic preview for the supported scene types.
-5. Transfer a reviewed, dimensioned, straight 2D beam into Vetin with one
-   click.
-6. Use Vetin's original solver and diagrams for the final beam calculation.
+## What it does
 
-For supported trusses and beams, the review panel explains the free-body
-diagram, includes support reactions in the equilibrium equations, and reports
-the calculated force and moment residuals. Applied loads alone are not expected
-to sum to zero; the complete external system includes the reactions.
+1. Open a built-in mechanics example **without an API key**, or upload a cropped JPG/PNG/WebP diagram or small PDF.
+2. Optionally use Google's **Gemini API** to suggest the geometry, loads, supports, units, and problem type.
+3. **Review and correct** the extracted scene and any optional structured mechanics parameters in Advanced Input.
+4. Inspect the educational visualization and deterministic results for the supported problem class.
+5. For a supported **straight, horizontal, dimensioned 2D beam**, optionally hand off the reviewed scene to the preserved Vetin beam solver.
+6. Export the current scene as JSON.
 
-The image parser is designed to recognize several classroom statics topics,
-including:
+Supported deterministic demonstrations include 2D trusses, simple beams, 2D/3D resultants, particle cables, ideal pulley ropes, Hooke-law springs, supported rigid bodies, dry/belt friction, composite polygon centroids, simple polynomial-bounded areas, and limited virtual work. **Support is conditional on valid structured input**, not merely recognizing an image. See [exact solver capabilities and assumptions](HIBBELER_COVERAGE_AND_LIMITS.md).
 
-- 2D beams and trusses
-- 2D frames and force diagrams
-- friction and lever problems
-- pulley and rope systems
-- centroid and composite-area diagrams
-- 3D cables, vectors, shafts, gears, and bearings
+This is an **educational prototype**, not a structural-design or safety-certification tool. AI extraction can misread diagrams or invent missing inputs; a confident-looking answer is not proof of correctness. Confirm *all* units, force directions, geometry and boundary conditions yourself.
 
-Recognition and preview do not mean that every problem can be transferred to
-Vetin. Only a reviewed, dimensioned, straight 2D beam is eligible for the Vetin
-handoff. Trusses, mechanisms, cables, and 3D problems remain in TrussVision's
-review and visualization workflow.
+## Start locally
 
-## Applications in this repository
+No npm dependencies, build tools, or paid account required for the deterministic demos. Run a local HTTP server in the extracted **project root** (the folder containing `index.html`):
+
+```bash
+python3 -m http.server 8765
+```
+
+On Windows, `py -3 -m http.server 8765` also works. Then open **http://localhost:8765/trussvision/**. Select a demo and click **LOAD DEMO**.
+
+### To scan your own problem
+
+1. Create an API key in [Google AI Studio](https://aistudio.google.com/apikey). This is a **Gemini API key**, which may also authenticate compatible hosted Gemma models; TrussVision itself currently calls **Gemini image-understanding models**, not Gemma.
+2. Open **AI SETTINGS**, paste **your own** key, and choose an available model.
+3. Select your cropped image/PDF and click **SCAN**.
+4. Read warnings, verify the extracted numbers and units, and fix errors in the Advanced Input editor before drawing conclusions.
+
+On **GitHub Pages** and other static hosts, the browser submits your key **directly to Google's API in a request header**, not to this GitHub repository. The key is not stored in source control or browser local storage, but it is still exposed to your own browser and its extensions. **Never share or commit API keys, screenshots containing keys, or `.env` files.** Apply quota limits and API restrictions as appropriate. For public production deployments, a trusted backend with rate controls is safer than a browser-supplied credential.
+
+On **Netlify**, you can configure the optional `netlify/functions/analyze.cjs` handler with a *server-side* `GEMINI_API_KEY`. The front end prefers the same-origin `/api/analyze` endpoint when available. A publicly exposed unprotected server endpoint may consume your quota; consider authentication, abuse protection, and rate limiting before deploying a shared server key.
+
+## Routes
 
 | Path | Purpose |
 | --- | --- |
-| [`/`](index.html) | Public TrussVision entrypoint; redirects to the Halloween interface |
-| [`/trussvision/`](trussvision/) | Halloween-themed TrussVision AI importer and structural review UI |
-| [`/vetin/`](vetin/) | Preserved Vetin Beam Analysis simulator and deterministic beam solver |
-| [`vetin/vetin-ai-bridge.js`](vetin/vetin-ai-bridge.js) | Receives a reviewed beam from TrussVision and links back to the public app |
-| [`trussvision/vetin-export.js`](trussvision/vetin-export.js) | Converts reviewed TrussVision beam scenes to Vetin model v2 JSON |
-| [`trussvision/gemini-client.js`](trussvision/gemini-client.js) | Direct Gemini fallback for local static servers and GitHub Pages |
-| [`netlify/functions/analyze.cjs`](netlify/functions/analyze.cjs) | Optional server-side Gemini endpoint for Netlify deployments |
-| [`tests/`](tests/) | Vetin regression and TrussVision contract tests |
+| `/` | Redirects to the TrussVision workbench |
+| `/trussvision/` | Main statics workbench, demonstrations, JSON review, Gemini adapter |
+| `/vetin/` | Original Vetin beam-analysis application, with an explicit handoff bridge |
+| `/netlify/functions/analyze.cjs` | Optional server-side Gemini integration (Netlify only) |
+| `/tests/` | Regression tests, physical benchmarks and integration contracts |
 
-## Quick start: local testing
+The app is framework-free and works on static hosts. GitHub Pages **does not run Netlify functions**; on Pages, scans require a personal API key in AI Settings.
 
-The project is a static web application and does not require a build step.
-Serve it over HTTP so that the service worker and browser modules work
-correctly.
+## Run checks
 
-```powershell
-cd D:\trussVision
-py -3 -m http.server 8765
+From the repository root with Node.js installed:
+
+```bash
+node tests/run-tests.js
+node tests/trussvision-checks.js
+node tests/truss-regression.js
+node tests/statics-regression.js
+node tests/ce211-paper-benchmarks.js
+node tests/hibbeler-regression.js
+node tools/check-deploy.js
 ```
 
-Open the public interface and, when needed, the preserved solver:
+The included GitHub Actions workflow runs these checks on each push or pull request. Automated numerical checks validate known examples and explicit failure cases, **not** every real-world statics drawing or AI scan. The Gemini integration cannot be tested without an API key and network access.
 
-- TrussVision: <http://localhost:8765/>
-- Direct TrussVision route: <http://localhost:8765/trussvision/>
-- Vetin solver: <http://localhost:8765/vetin/>
+## Publish to GitHub Pages
 
-For an AI scan in local static mode:
+See **[PUBLISHING_GUIDE.md](PUBLISHING_GUIDE.md)** for step-by-step publishing instructions, including the existing team repository, collaborator permissions, a separate personal fork/repository, and how to check the live site.
 
-1. Enter a restricted Gemini API key in the TrussVision interface.
-2. Upload one clear, cropped problem image at a time.
-3. Select **SCAN**.
-4. Review every detected dimension, force, support, and warning.
-5. Transfer only a compatible reviewed beam to Vetin.
+The Pages deployment uses **Settings → Pages → Deploy from a branch → main → /(root)**. There is no build command. Keep `index.html`, `trussvision/`, `vetin/`, and `netlify/` in the same repository root. After changes, wait for the Pages deployment to finish and check the console and the live site.
 
-The key is held in browser memory for the session and is never part of this
-repository. Do not paste an API key into source files, commit it, or share it
-in screenshots.
+## Architecture and limits
 
-The built-in Beam / Distributed Load demonstration does not require Gemini and
-is the fastest way to test the TrussVision-to-Vetin bridge.
+- `trussvision/app.js`: UI state, interactive canvas, scan workflow, solver presentation.
+- `trussvision/truss-solver.js` / `statics-solvers.js` / `mechanics-engine.js`: deterministic math paths.
+- `trussvision/gemini-client.js`: direct Google API adapter for static hosts, with bounded scene extraction.
+- `trussvision/vetin-export.js`: unit-checked bridge to the preserved Vetin model.
+- `vetin/`: original beam simulation and its bundled libraries/assets.
+- `tests/`: independent regression checks; see the included mathematical validation reports.
 
-## Test commands
-
-Run the full existing test suite from the repository root:
-
-```powershell
-node tests\run-tests.js
-node tests\trussvision-checks.js
-node tests\truss-regression.js
-node tools\check-deploy.js
-git diff --check
-```
-
-The test suite covers the beam solver, reactions, internal-force diagrams,
-elastic curves, determinacy checks, practice problems, model-file conversion,
-embedded example models, service-worker deployment integrity, and the
-TrussVision/Vetin adapter. The TrussVision contract checks cover the guided
-workflow, in-app dialogs, static-host scan fallback, server-key boundary, and
-beam handoff rules.
-
-## Development architecture
-
-TrussVision is intentionally framework-free so the same files work on GitHub
-Pages and through `py -3 -m http.server`. The public interface is kept in
-`trussvision/`; its app module owns scene state, deterministic previews, and
-canvas interaction. The Gemini adapter and Vetin converter are separate
-boundaries so they can be tested without loading the full UI.
-
-The original Vetin runtime remains isolated under `vetin/`. It is not part of
-normal navigation and opens only after TrussVision converts a reviewed,
-dimensioned horizontal beam into Vetin model v2 data. The optional Netlify
-function accepts only the server-side `GEMINI_API_KEY`; local static servers
-and GitHub Pages use the session-only browser fallback when necessary.
-
-## Deployment
-
-### GitHub Pages
-
-GitHub Pages can host this repository without Netlify:
-
-1. Open the repository's **Settings > Pages**.
-2. Select **Deploy from a branch**.
-3. Select the `main` branch and the repository root (`/`).
-4. Open the generated project-site URL.
-
-The public app and its direct route are then available at:
-
-```text
-https://YOUR-USERNAME.github.io/trussVision/
-https://YOUR-USERNAME.github.io/trussVision/trussvision/
-https://YOUR-USERNAME.github.io/trussVision/vetin/
-```
-
-The project root intentionally redirects to TrussVision. The Vetin route is a
-secondary solver destination used after clicking **SEND BEAM TO VETIN SOLVER**;
-it is not the public landing page.
-
-GitHub Pages does not run the Netlify function. In that mode, TrussVision sends
-the typed key directly to Google's Gemini API for the current browser session.
-Use a restricted key with an appropriate quota, and do not embed it in the
-repository.
-
-### Netlify (optional)
-
-Netlify can run the Gemini request server-side and keep the production key out
-of the browser:
-
-- Publish directory: `.`
-- Functions directory: `netlify/functions`
-- Build command: leave blank
-- Environment variable: `GEMINI_API_KEY`
-
-When the function is available, TrussVision uses `/api/analyze`. The function
-reads only `GEMINI_API_KEY` from Netlify environment variables. If the
-function is unavailable or not configured, the application falls back to the
-direct browser adapter for local or static hosting.
-
-## Important limitations
-
-- Gemini image parsing is probabilistic. It can misread symbols, dimensions,
-  units, arrows, or handwritten annotations.
-- Always verify the extracted scene before solving or transferring it.
-- Only straight, dimensioned 2D beams are converted to Vetin model v2.
-- TrussVision is an educational demonstration, not a code-compliance or
-  professional engineering design tool.
-- The preview solver intentionally supports a limited classroom statics scope;
-  it does not claim to be a universal cable, rigid-body, buckling, shear-
-  deflection, or structural-code solver.
-- A successful AI response does not by itself prove that the result is
-  physically correct.
-
-## Repository structure
-
-```text
-trussVision/
-|-- index.html                 TrussVision public redirect
-|-- sw.js                      One-time cleanup worker for old root deployments
-|-- vetin/                     Preserved Vetin solver runtime
-|   |-- index.html             Secondary Vetin beam solver
-|   |-- model.js, actions.js   Vetin model format and application actions
-|   |-- solver.js, calculations.js
-|   |-- vetin-ai-bridge.js     Reviewed-beam handoff bridge
-|   |-- models/                Original Vetin example models
-|   `-- vendor/                Bundled Chart.js and Three.js dependencies
-|-- trussvision/
-|   |-- index.html              TrussVision interface
-|   |-- app.js                  Scene UI, scan flow, and deterministic preview
-|   |-- truss-solver.js         Pure 2D truss solver shared by UI and tests
-|   |-- gemini-client.js        Static-host Gemini adapter
-|   |-- vetin-export.js         Reviewed beam to Vetin model conversion
-|   `-- style files             TrussVision visual system
-|-- netlify/functions/          Optional Gemini server function
-|-- tests/                      Vetin regression and TrussVision contract checks
-|   `-- fixtures/               Deterministic statics regression scenes
-|-- .github/workflows/          CI checks for pushes and pull requests
-`-- LICENSE                     Original MIT license
-```
+AI review and math solving are separate. Do not expect every classified `beam`, `frame`, `3D`, `friction` or `spring` image to solve without manually supplying appropriate structured data. The bridge supports a smaller set than the full preview engine. Review [coverage and known unsupported cases](HIBBELER_COVERAGE_AND_LIMITS.md) before trusting outputs.
 
 ## Credits and license
 
-TrussVision is the hackathon extension and integration work in this
-repository. It preserves and reuses the original Vetin Beam Analysis
-application, model format, solver, examples, tests, and MIT license.
+TrussVision: **Azhan Mohammed and Santiago Pelaez**. Built for the [WSU ACM CrimsonCode: Hacktoberfest 2026 event](https://wsu-acm.github.io/crimsoncode/).
 
-The original Vetin Beam Analysis project was developed by Assoc. Prof. Dr.
-Rasim Temur at Istanbul University-Cerrahpasa as part of the Vetin initiative.
-See the original project at
-<https://github.com/rasimtemur/vetin-beam>.
-
-The repository is distributed under the MIT License. See [`LICENSE`](LICENSE)
-for the complete license text.
-
----
-
-**TrussVision - real statics, reviewed inputs, and an honest bridge to Vetin.**
+The project **builds on and includes** the MIT-licensed [Vetin Beam Analysis](https://github.com/rasimtemur/vetin-beam) software by Assoc. Prof. Dr. **Rasim Temür**, Istanbul University-Cerrahpasa. Original Vetin source, third-party dependencies, and attribution are retained. See the repository [MIT License](LICENSE).

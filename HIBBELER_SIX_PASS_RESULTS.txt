@@ -1,0 +1,54 @@
+PASS 1 / 6
+Sonuç: 210 başarılı, 0 başarısız
+TrussVision result: 17 passed, 0 failed
+All truss regressions passed.
+PASS: 8 beam and spatial validation cases (reaction/moment/shear/equilibrium/geometry).
+CE211 reference validation PASS: 25 independent numeric assertions
+HIBBELER ENGINE: 63 numerical, extraction-schema, and failure-mode assertions passed.
+Deployment check passed (80 referenced files).
+PASS 1 COMPLETE
+PASS 2 / 6
+Sonuç: 210 başarılı, 0 başarısız
+TrussVision result: 17 passed, 0 failed
+All truss regressions passed.
+PASS: 8 beam and spatial validation cases (reaction/moment/shear/equilibrium/geometry).
+CE211 reference validation PASS: 25 independent numeric assertions
+HIBBELER ENGINE: 63 numerical, extraction-schema, and failure-mode assertions passed.
+Deployment check passed (80 referenced files).
+PASS 2 COMPLETE
+PASS 3 / 6
+Sonuç: 210 başarılı, 0 başarısız
+TrussVision result: 17 passed, 0 failed
+All truss regressions passed.
+PASS: 8 beam and spatial validation cases (reaction/moment/shear/equilibrium/geometry).
+CE211 reference validation PASS: 25 independent numeric assertions
+HIBBELER ENGINE: 63 numerical, extraction-schema, and failure-mode assertions passed.
+Deployment check passed (80 referenced files).
+PASS 3 COMPLETE
+PASS 4 / 6
+Sonuç: 210 başarılı, 0 başarısız
+TrussVision result: 17 passed, 0 failed
+All truss regressions passed.
+PASS: 8 beam and spatial validation cases (reaction/moment/shear/equilibrium/geometry).
+CE211 reference validation PASS: 25 independent numeric assertions
+HIBBELER ENGINE: 63 numerical, extraction-schema, and failure-mode assertions passed.
+Deployment check passed (80 referenced files).
+PASS 4 COMPLETE
+PASS 5 / 6
+Sonuç: 210 başarılı, 0 başarısız
+TrussVision result: 17 passed, 0 failed
+All truss regressions passed.
+PASS: 8 beam and spatial validation cases (reaction/moment/shear/equilibrium/geometry).
+CE211 reference validation PASS: 25 independent numeric assertions
+HIBBELER ENGINE: 63 numerical, extraction-schema, and failure-mode assertions passed.
+Deployment check passed (80 referenced files).
+PASS 5 COMPLETE
+PASS 6 / 6
+Sonuç: 210 başarılı, 0 başarısız
+TrussVision result: 17 passed, 0 failed
+All truss regressions passed.
+PASS: 8 beam and spatial validation cases (reaction/moment/shear/equilibrium/geometry).
+CE211 reference validation PASS: 25 independent numeric assertions
+HIBBELER ENGINE: 63 numerical, extraction-schema, and failure-mode assertions passed.
+Deployment check passed (80 referenced files).
+PASS 6 COMPLETE

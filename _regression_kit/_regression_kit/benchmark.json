@@ -1,0 +1,8 @@
+{
+  "kind":"truss","title":"Exam B - seven joint planar truss","units":"ft","forceUnit":"lb",
+  "nodes":[{"id":"A","x":0,"y":0,"z":0,"support":"pin"},{"id":"B","x":2.2,"y":0,"z":0,"support":"none"},{"id":"C","x":9.5,"y":0,"z":0,"support":"none"},{"id":"D","x":11.7,"y":0,"z":0,"support":"none"},{"id":"G","x":0,"y":4.5,"z":0,"support":"pin"},{"id":"F","x":2.2,"y":4.5,"z":0,"support":"none"},{"id":"E","x":9.5,"y":4.5,"z":0,"support":"none"}],
+  "members":[{"a":"A","b":"B"},{"a":"A","b":"F"},{"a":"G","b":"F"},{"a":"B","b":"F"},{"a":"F","b":"E"},{"a":"B","b":"E"},{"a":"E","b":"C"},{"a":"E","b":"D"},{"a":"B","b":"C"},{"a":"C","b":"D"}],
+  "loads":[{"node":"B","fx":0,"fy":-74,"fz":0},{"node":"D","fx":23,"fy":-42,"fz":0}],
+  "pointLoads":[],"distributedLoads":[],"couples":[],"shapes":[],"studySteps":[],"warnings":[],"questions":[],"dimensions":[],"confidence":1,
+  "expected":{"BC_lb":2.466666666666667,"CD_lb":2.466666666666667,"CE_lb":0,"DE_lb":46.75059120244126,"BF_lb":116,"Ax_lb":122.37777777777778,"Ay_lb":116,"Gx_lb":-145.37777777777777,"Gy_lb":0,"equilibriumForceTolerance_lb":0.001}
+}

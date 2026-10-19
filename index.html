@@ -11,17 +11,17 @@
   <script>
     (() => {
       const target = new URL('trussvision/', location.href).href;
-      const retireLegacyWorkers = async () => {
-        if ('serviceWorker' in navigator) {
-          const registrations = await navigator.serviceWorker.getRegistrations();
-          await Promise.all(registrations.map((registration) => registration.unregister()));
-        }
-        if ('caches' in window) {
-          const keys = await caches.keys();
-          await Promise.all(keys.map((key) => caches.delete(key)));
-        }
+      // Only retire workers scoped to this project. GitHub Pages shares an
+      // origin between repositories; clearing all caches/workers harms others.
+      const retireProjectWorkers = async () => {
+        if (!('serviceWorker' in navigator)) return;
+        const projectPath = new URL('./', location.href).pathname;
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(registrations
+          .filter(reg => new URL(reg.scope).pathname.startsWith(projectPath))
+          .map(reg => reg.unregister()));
       };
-      retireLegacyWorkers().catch(() => {}).finally(() => location.replace(target));
+      retireProjectWorkers().catch(() => {}).finally(() => location.replace(target));
     })();
   </script>
 </body>

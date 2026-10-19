@@ -1,9 +1,5 @@
 const { solveTrussModel, analyzeTrussScene, repairExamWallPin } = globalThis.TVTrussSolver || {};
 const $=id=>document.getElementById(id);
-// Reversible Halloween HUD palette. Solver mathematics and scene data stay unchanged.
-const hudColor=(haunted,normal)=>document.body.classList.contains('haunted')?haunted:normal;
-const themeToggle=$('themeToggle');
-if(themeToggle){themeToggle.onclick=()=>{const on=document.body.classList.toggle('haunted');themeToggle.textContent=on?'🎃 SPOOK MODE: ON':'◈ SPOOK MODE: OFF';themeToggle.setAttribute('aria-pressed',String(on));draw();};}
 
 const clone=x=>structuredClone(x);
 const demos={
@@ -13,12 +9,27 @@ const demos={
  ,cable3d:{kind:'cable3d',spatial:true,title:'Spatial cable system / 3D vector demo',summary:'Three anchored cables stabilize a suspended joint. Drag to orbit and inspect force directions.',confidence:1,units:'m',forceUnit:'kN',nodes:[{id:'O',x:0,y:0,z:0,support:'none'},{id:'A',x:-3,y:3,z:2,support:'fixed'},{id:'B',x:3,y:2,z:-2,support:'fixed'},{id:'C',x:0,y:4,z:4,support:'fixed'}],members:[{a:'O',b:'A'},{a:'O',b:'B'},{a:'O',b:'C'}],loads:[{node:'O',fx:0,fy:-12,fz:0,label:'12 kN DOWN'}],pointLoads:[],distributedLoads:[],couples:[],shapes:[],dimensions:[],studySteps:['Sketch an FBD at the cable connection.','Determine cable unit vectors from anchor coordinates.','Set ΣFx=ΣFy=ΣFz=0 to solve cable tensions.'],warnings:['This demo illustrates 3D cable geometry; full cable-tension solution is not yet implemented.'],questions:[],explanation:'An orbiting 3D diagram helps students see x/y/z cable directions and how 3D force equilibrium differs from 2D.'},
  frame2d:{kind:'frame2d',spatial:false,title:'Pinned 2D articulated frame preview',summary:'Rigid frame with a distributed load and an internal pin. Geometry is interactive; reactions are not yet solved.',confidence:1,units:'ft',forceUnit:'lb',nodes:[{id:'A',x:0,y:0,z:0,support:'pin'},{id:'B',x:3,y:9,z:0,support:'none'},{id:'C',x:13,y:9,z:0,support:'pin'}],members:[{a:'A',b:'B'},{a:'B',b:'C'}],loads:[{node:'B',fx:180,fy:0,fz:0,label:'180 lb horizontal'}],pointLoads:[],distributedLoads:[],couples:[],shapes:[],dimensions:[{label:'10 ft',value:10}],studySteps:['Separate members at pin B.','Replace distributed loads with their equivalent resultants.','Write ΣM, ΣFx and ΣFy for each member.'],warnings:['Frame equilibrium solver not available; do not interpret the on-screen forces as solved reactions.'],questions:[],explanation:'A teaching example of a frame; inspect joint connectivity, external load directions and support conditions.'}
 };
+
+demos.cable3d.physics={operation:'particle',dimension:3,forces:[[0,-12,0]],tensions:[{id:'OA',direction:[-3,3,2]},{id:'OB',direction:[3,2,-2]},{id:'OC',direction:[0,4,4]}]};
+demos.cable3d.warnings=['Ideal anchored cables; third cable has near-zero tension for this particular loading, so inspect whether it is taut.'];
+demos.cable3d.explanation='The reviewed cable geometry is resolved into three spatial unit vectors and solved using ΣFx=ΣFy=ΣFz=0. Negative cable tensions are rejected.';
+// Hibbeler-family deterministic examples. Visual geometry is a diagram, not
+// a source of computed values: all arithmetic uses physics below.
+demos.spring2d={kind:'spring2d',title:'Spring-supported hanging masses',summary:'Hooke law: two hanging masses carried by one spring.',confidence:1,units:'mm',forceUnit:'N',nodes:[{id:'Ceiling',x:0,y:2,z:0,support:'fixed'},{id:'Block',x:0,y:0,z:0,support:'none'}],members:[{a:'Ceiling',b:'Block'}],loads:[],physics:{operation:'spring',arrangement:'parallel',stiffnesses:[27.1],massesKg:[.717,.336],g:9.81},warnings:[],questions:[],explanation:'The mass-to-force conversion is explicit. Hooke law yields displacement in millimeters because stiffness is N/mm.'};
+demos.pulley2d={kind:'pulley2d',title:'Ideal movable pulley',summary:'A 100 N weight supported by two segments of the same frictionless rope.',confidence:1,units:'m',forceUnit:'N',nodes:[{id:'L',x:-1,y:3,z:0,support:'fixed'},{id:'P',x:0,y:1,z:0,support:'none'},{id:'R',x:1,y:3,z:0,support:'none'}],members:[{a:'L',b:'P'},{a:'P',b:'R'}],loads:[{node:'P',fx:0,fy:-100,fz:0,label:'100 N'}],physics:{operation:'rigid2d',bodies:[{id:'pulley',forces:[{at:[0,0],value:[0,-100]}]}],ropes:[{id:'rope1',segments:[{body:'pulley',at:[0,0],direction:[0,1]},{body:'pulley',at:[0,0],direction:[0,1]}]}]},warnings:['Ideal massless rope/pulley; rope friction and acceleration neglected.'],questions:[],explanation:'Both rope segments share a common tension T, hence 2T−100=0.'};
+demos.friction2d={kind:'friction2d',title:'Friction versus tipping',summary:'Compare the push needed to slide a cabinet versus the push needed to tip it.',confidence:1,units:'ft',forceUnit:'lb',nodes:[{id:'A',x:0,y:0,z:0,support:'none'},{id:'B',x:2,y:0,z:0,support:'none'},{id:'C',x:2,y:3,z:0,support:'none'},{id:'D',x:0,y:3,z:0,support:'none'}],members:[{a:'A',b:'B'},{a:'B',b:'C'},{a:'C',b:'D'},{a:'D',b:'A'}],loads:[],physics:{operation:'friction',model:'slide_tipping',weight:180,width:2,pushHeight:4,muStatic:.2},warnings:['Push height 4 ft is a parameter and is not drawn to scale on the cabinet.'],questions:[],explanation:'Competing thresholds decide which occurs first: impending slide or impending tip.'};
+demos.centroid2d={kind:'centroid2d',title:'Composite centroid and area moments',summary:'Find centroid, second moments of area, and the effect of a square hole.',confidence:1,units:'ft',forceUnit:'lb',nodes:[{id:'O',x:0,y:0,z:0,support:'none'},{id:'E',x:4,y:4,z:0,support:'none'}],members:[],loads:[],shapes:[{mode:'solid',label:'SOLID',points:[{x:0,y:0},{x:4,y:0},{x:4,y:4},{x:0,y:4}]},{mode:'cutout',label:'HOLE',points:[{x:1,y:1},{x:3,y:1},{x:3,y:3},{x:1,y:3}]}],physics:{operation:'centroid',regions:[{points:[[0,0],[4,0],[4,4],[0,4]]},{cutout:true,points:[[1,1],[3,1],[3,3],[1,3]]}]},warnings:[],questions:[],explanation:'Exact polygon integrals, not a pixel-based approximation.'};
+demos.frameSolved2d={kind:'frame2d',title:'Fixed-support frame reactions',summary:'Rigid planar cantilever with 20 N downward force 2 m from a fixed wall.',confidence:1,units:'m',forceUnit:'N',nodes:[{id:'A',x:0,y:0,z:0,support:'fixed'},{id:'B',x:2,y:0,z:0,support:'none'}],members:[{a:'A',b:'B'}],loads:[{node:'B',fx:0,fy:-20,fz:0,label:'20 N'}],physics:{operation:'rigid2d',bodies:[{id:'frame',forces:[{at:[2,0],value:[0,-20]}],supports:[{type:'fixed',id:'A',at:[0,0]}]}]},warnings:[],questions:[],explanation:'A fixed support provides horizontal, vertical, and moment reactions.'};
+demos.belt2d={kind:'friction2d',title:'Belt friction / capstan equation',summary:'Given 44 lb tight-side tension and three cylinder contacts totaling 2π radians, find slack-side tension.',confidence:1,units:'ft',forceUnit:'lb',nodes:[{id:'A',x:0,y:0,z:0,support:'none'},{id:'B',x:3,y:0,z:0,support:'none'}],members:[{a:'A',b:'B'}],loads:[],physics:{operation:'friction',model:'belt',highTension:44,mu:.43,wrapRadians:2*Math.PI},warnings:['Wrap angles add only under a consistent slip direction.'],questions:[],explanation:'At impending belt slip, T_high/T_low=exp(μθ) with θ in radians.'};
+demos.curved2d={kind:'centroid2d',title:'Curved boundary — exact area inertia',summary:'Compute Ix and Iy of the region between y=x²/15 and y=−x/2, 0≤x≤15 ft.',confidence:1,units:'ft',forceUnit:'lb',nodes:[{id:'O',x:0,y:0,z:0,support:'none'},{id:'B',x:15,y:15,z:0,support:'none'}],members:[],loads:[],shapes:[{label:'POLYNOMIAL REGION',mode:'solid',points:[...Array.from({length:31},(_,i)=>{const x=i/2;return {x,y:x*x/15};}),...Array.from({length:31},(_,i)=>{const x=15-i/2;return {x,y:-x/2};})]}],physics:{operation:'centroid_polynomial',regions:[{xMin:0,xMax:15,top:[0,0,1/15],bottom:[0,-.5]}]},warnings:['Curved boundary is drawn as a segmented approximation; integral is exact for the given polynomials.'],questions:[],explanation:'Exact area integration reproduces the 16,453.125 ft⁴ y-axis moment from the CE 211 worksheet.'};
+demos.vector3d={kind:'vector3d',spatial:true,title:'3D bent pipe moment about O',summary:'Find the total moment of a 3D force and a clockwise applied couple about the origin.',confidence:1,units:'ft',forceUnit:'lb',nodes:[{id:'O',x:0,y:0,z:0,support:'fixed'},{id:'P',x:-20,y:39,z:59,support:'none'}],members:[{a:'O',b:'P'}],loads:[{node:'P',fx:8,fy:17,fz:-21,label:'(8,17,-21) lb'}],couples:[{node:'O',mx:0,my:0,mz:-183,label:'183 ft lb clockwise z'}],physics:{operation:'resultant',dimension:3,forces:[{at:[-20,39,59],value:[8,17,-21]}],couples:[[0,0,-183]]},warnings:['Uses the printed application point z=59 ft, not the handwritten z=34 ft.'],questions:[],explanation:'Calculate M_O=r×F+M_applied, with clockwise about +z negative.'};
+
 let scene=clone(demos.truss),original=clone(scene),mult=1,mode='select',show3d=false,showLabels=true,selected=null,buildStart=null,drag=null,hover=null,angle=.45,tilt=.46,orbitMix=0,orbitOn=true,orbitSpeed=0,orbitedAt=0,lastFrame=0,animationFrame=0,solveFrame=0,pan={x:0,y:0},zoom=1,view={cx:0,cy:0,s:30},solution=null,problem=null,source='demo';
 const canvas=$('stage'),ctx=canvas.getContext('2d');
 const safe=(x,def=0)=>Number.isFinite(Number(x))&&x!==null&&x!==''?Number(x):def;
 const fmt=(x,units='')=>Number.isFinite(x)?`${(Math.abs(x)<.0005?0:x).toFixed(Math.abs(x)>=100?1:2)}${units}`:'N/A';
 const node=id=>scene.nodes.find(n=>n.id===id);
-const eligible=()=>['m','ft','in'].includes(scene.units) && ['kN','N','lb'].includes(scene.forceUnit||'kN') && scene.nodes.length>=2;
+const eligible=()=>scene.physics ? Boolean(scene.physics.operation&&['kN','N','lb'].includes(scene.forceUnit)) : ['m','ft','in'].includes(scene.units) && ['kN','N','lb'].includes(scene.forceUnit||'kN') && scene.nodes.length>=2;
 const lengthInM=()=>({m:1,ft:.3048,in:.0254}[scene.units]||1);
 const forceInKN=()=>({kN:1,N:.001,lb:.0044482216152605}[scene.forceUnit||'kN']||1);
 const forceLabel=()=>scene.forceUnit||'kN';
@@ -46,20 +57,29 @@ function scheduleSolve(){
  solveFrame=requestAnimationFrame(()=>{solveFrame=0;solveAndRender();});
 }
 function validate(s){
- if(!s || !['truss','beam','frame2d','force2d','friction2d','pulley2d','centroid2d','cable3d','vector3d','machine3d','other2d','unknown'].includes(s.kind))throw Error('Unsupported scene type.');
+ if(!s || !['truss','beam','frame2d','force2d','friction2d','pulley2d','spring2d','centroid2d','cable3d','vector3d','machine3d','other2d','unknown'].includes(s.kind))throw Error('Unsupported scene type.');
  if(!Array.isArray(s.nodes)||!Array.isArray(s.members)||s.nodes.length>45||s.members.length>75)throw Error('Invalid node/member arrays or too many elements.');
  const ids=new Set();for(const n of s.nodes){if(!n.id||ids.has(n.id))throw Error('Node IDs must be unique.');ids.add(n.id);for(const p of ['x','y','z']){if(!Number.isFinite(Number(n[p]??0)))throw Error(`Invalid coordinate for ${n.id}.`);n[p]=Number(n[p]??0);}if(!['pin','roller','fixed','none'].includes(n.support))throw Error(`Invalid support ${n.support}`);}
  for(const m of s.members)if(!ids.has(m.a)||!ids.has(m.b)||m.a===m.b)throw Error('Members must connect two different existing nodes.');
  for(const l of s.loads||[])if(!ids.has(l.node))throw Error('Load refers to missing node.');
  for(const k of ['loads','pointLoads','distributedLoads','couples','shapes','studySteps','warnings','questions','dimensions'])if(!Array.isArray(s[k]))s[k]=[];
+ if(s.physics && (!s.physics.operation||typeof s.physics.operation!=='string'))throw Error('Invalid structured mechanics operation.');
  return s;
 }
 function setScene(s,origin='demo'){
- scene=validate(repairExamWallPin(clone(s)));original=clone(scene);source=origin;selected=null;buildStart=null;zoom=1;pan={x:0,y:0};
+ const next=validate(repairExamWallPin(clone(s)));scene=next;original=clone(next);source=origin;selected=null;buildStart=null;zoom=1;pan={x:0,y:0};
  show3d=Boolean(scene.spatial||['cable3d','vector3d','machine3d'].includes(scene.kind));orbitOn=true;if(show3d)ensureAnimation();
  $('threeD').disabled=!show3d;
  $('threeD').textContent=show3d?'◈ AUTO ORBIT: ON':'◈ 2D VIEW • LOCKED';
  $('sceneJson').value=JSON.stringify(scene,null,2);
+ document.querySelectorAll('[data-mode]').forEach(button=>{
+   button.disabled=Boolean(scene.physics)&&button.dataset.mode!=='select';
+   if(scene.physics)button.classList.toggle('on',button.dataset.mode==='select');
+ });
+ if(scene.physics){mode='select';$('modeInfo').textContent='Reviewed mechanics input is locked to prevent drawing/physics divergence. Edit Advanced Input JSON to modify forces, cables, springs or coordinates.';}
+ $('multiplier').disabled=Boolean(scene.physics);
+ $('multiplier').title=scene.physics?'Edit the reviewed physics model in Advanced Input to change its loads; multiplier applies only to beams/trusses.':'Load multiplier';
+ if(scene.physics){mult=1;$('multiplier').value=100;$('multiplierLabel').textContent='1.00×';}
  $('sceneTitle').textContent=scene.title||'UNNAMED DIAGRAM';
  $('explanation').textContent=scene.summary||scene.title||'Review the identified geometry and loading.';
  updateWorkflow('review');
@@ -91,6 +111,8 @@ function solveTruss(){
  return solveTrussModel(scene,{areaMm2:safe($('area').value,1200),elasticGPa:safe($('elastic').value,200),yieldMPa:safe($('yield').value,250),multiplier:mult});
 }
 function solveBeam(){
+ return globalThis.TVStaticsSolvers.solveBeamStatics(scene,mult);
+
  if(scene.members.length!==1||scene.nodes.length!==2)throw Error('Beam engine currently supports one straight, simply supported span.');
  const a=scene.nodes[0],b=scene.nodes[1],left=Math.min(a.x,b.x),right=Math.max(a.x,b.x),L=right-left;
  if(L<=0||a.y!==b.y||!['pin','roller'].includes(a.support)||!['pin','roller'].includes(b.support))throw Error('Beam requires a horizontal span with pin/roller supports at the ends.');
@@ -109,6 +131,8 @@ function solveBeam(){
   return {type:'beam',RA,RB,equilibrium,totalApplied:total,momentApplied:moments,span:L,points:results,maxShear:Math.max(...results.map(r=>Math.abs(r.V))),maxMoment:Math.max(...results.map(r=>Math.abs(r.M))),maxUtil:null};
 }
 function solveSpatialVectors(){
+ return globalThis.TVStaticsSolvers.solveSpatialStatics(scene,mult);
+
  const loads=scene.loads||[];if(!loads.length)throw Error('No explicitly known spatial forces to sum; upload clearer image or review scene data.');
  let R={x:0,y:0,z:0},M={x:0,y:0,z:0};
  for(const l of loads){const n=node(l.node);if(!n)continue;const fx=safe(l.fx)*mult,fy=safe(l.fy)*mult,fz=safe(l.fz)*mult;
@@ -122,7 +146,8 @@ function solveAndRender(){
  problem=null;solution=null;
  try{
   if(!eligible())throw Error('Numbers/units need confirmation. Visualization can still be used.');
-  if(scene.kind==='truss')solution=solveTruss();
+  if(scene.physics)solution=globalThis.TVMechanics.solvePhysics(scene.physics);
+  else if(scene.kind==='truss')solution=solveTruss();
   else if(scene.kind==='beam')solution=solveBeam();
   else if(show3d)solution=solveSpatialVectors();
   else throw Error('This topic can be visualized, but its specialized physics solver is not implemented yet.');
@@ -201,13 +226,15 @@ function renderForceTelemetry(){
   }else telemetryMessage(reactionBox,'No supports found.');
  }else if(solution?.type==='beam'){
   const supports=scene.nodes;
-  // The beam solver supports only vertical applied loading, and returns
-  // vertical reactions in scene units. Horizontal reactions are zero.
+  // Beam reactions include the horizontal pin restraint when applicable.
   const left=supports[0].x<=supports[1].x?supports[0]:supports[1];
   const right=left===supports[0]?supports[1]:supports[0];
-  telemetryRow(reactionBox,[left.id,formatSignedForce(0),formatSignedForce(solution.RA)],['member-name','force-reaction','force-reaction'],nodeCols);
-  telemetryRow(reactionBox,[right.id,formatSignedForce(0),formatSignedForce(solution.RB)],['member-name','force-reaction','force-reaction'],nodeCols);
- }else telemetryMessage(reactionBox,'Not calculated for this problem type — never assume zero.');
+  telemetryRow(reactionBox,[left.id,formatSignedForce(solution.horizontalAt===left.id?solution.Rx:0),formatSignedForce(solution.RA)],['member-name','force-reaction','force-reaction'],nodeCols);
+  telemetryRow(reactionBox,[right.id,formatSignedForce(solution.horizontalAt===right.id?solution.Rx:0),formatSignedForce(solution.RB)],['member-name','force-reaction','force-reaction'],nodeCols);
+ }else if(solution?.reactions?.length){
+  for(const r of solution.reactions){const v=r.value,dir=r.direction||[0,0];telemetryRow(reactionBox,[`${r.body}:${r.name.split('.').pop()}`,formatSignedForce(v*dir[0]),formatSignedForce(v*dir[1])],['member-name','force-reaction','force-reaction'],nodeCols);}
+ }else if(solution?.unknowns){telemetryMessage(reactionBox,'Solved reactions and tensions are listed in the Analysis Output.');}
+ else telemetryMessage(reactionBox,'Not calculated for this problem type — never assume zero.');
 }
 function renderInformation(){
  $('kind').textContent=scene.kind.toUpperCase();$('counts').textContent=`${scene.nodes.length} / ${scene.members.length}`;
@@ -216,7 +243,7 @@ function renderInformation(){
  $('util').textContent=util===null?'N/A':`${(util*100).toFixed(1)}%`;
  $('bar').style.width=util===null?'0%':`${Math.min(100,util*100)}%`;
  $('bar').style.background=util>1?'var(--red)':util>.75?'var(--amber)':'var(--green)';
- $('solverBadge').textContent=solution?(source==='demo'?'CALCULATED • DEMO':'CALCULATED • CHECK INPUT'):'VISUALIZATION ONLY';
+ $('solverBadge').textContent=solution?.type==='resultant'?'RESULTANT ONLY':solution?(source==='demo'?'CALCULATED • DEMO':'CALCULATED • CHECK INPUT'):'VISUALIZATION ONLY';
  $('solverBadge').style.color=source==='demo'&&solution?'var(--green)':'var(--amber)';
  renderForceTelemetry();
  renderStudentAnalysis();
@@ -240,10 +267,24 @@ function renderInformation(){
  line('Σ applied M about origin',`(${fmt(M.x)}, ${fmt(M.y)}, ${fmt(M.z)}) ${forceLabel()}·${scene.units}`);
  line('Limit','Sums known external forces only; reaction forces and 3D equilibrium are NOT solved.');
  }
+ if(scene.physics && solution){
+  line('Mechanics model',scene.physics.operation);
+  const titleMap={centroid_polynomial:'Exact curved-area integration',rigid2d:'2D rigid body reactions',rigid3d:'3D rigid body reactions',particle:'Particle/cable tensions',spring:'Linear spring equilibrium',friction:'Friction thresholds',centroid:'Centroid & area inertia',resultant:'Force / moment resultant',virtual_work:'Virtual-work equilibrium'};
+  line('Method',titleMap[scene.physics.operation]||scene.physics.operation);
+  for(const [key,value] of Object.entries(solution.unknowns||{})){const unit=/\.(?:M|Mx|My|Mz)$/.test(key)?`${forceLabel()}·${scene.units}`:forceLabel();line(key,fmt(value,` ${unit}`));}
+  const omit=new Set(['type','unknowns','description','reactions','residuals','rank','equations','maxResidual','appliedResultant','appliedMoment']);
+  for(const [key,value] of Object.entries(solution))if(!omit.has(key)){
+    if(typeof value==='number'){const su=key==='area'?`${scene.units}²`:/^(?:Ix|Iy|Ixy|IxCentroid|IyCentroid|IxyCentroid)$/.test(key)?`${scene.units}⁴`:/^(?:cx|cy|extension)$/.test(key)?scene.units:/^(?:slidingForce|tippingForce|highTension|lowTension|force|requiredFriction|normal|maxStaticFriction)$/.test(key)?forceLabel():'';line(key,fmt(value,su?` ${su}`:''));}
+    else if(typeof value==='boolean'||typeof value==='string')line(key,String(value));
+    else if(Array.isArray(value))line(key,value.map(x=>fmt(x)).join(', ')+(` ${key==='M'?forceLabel()+'·'+scene.units:key==='R'?forceLabel():''}`));
+  }
+  if(solution.maxResidual!==undefined)line('Max equilibrium residual',fmt(solution.maxResidual));
+  if(solution.description)line('Assumptions',solution.description);
+ }
  for(const step of (scene.studySteps||[]).slice(0,5))line('Learning step',step);
  line('Source',source==='demo'?'Original demo':'AI-generated interpretation; values may be inaccurate. Inspect before relying on any result.');
  const reviewWarnings=scene.kind==='truss'?analyzeTrussScene(scene).warnings:[];
- const notes=[...new Set([...(scene.warnings||[]),...reviewWarnings,...(scene.questions||[]).map(q=>'Confirm: '+q),...(problem&&scene.kind==='truss'?[`Review geometry & supports: ${problem} Use ADVANCED INPUT to correct the extracted topology before solving.`]:[])])];
+ const notes=[...new Set([...(scene.warnings||[]),...(solution?.stabilityWarning?[solution.stabilityWarning]:[]),...reviewWarnings,...(scene.questions||[]).map(q=>'Confirm: '+q),...(problem&&scene.kind==='truss'?[`Review geometry & supports: ${problem} Use ADVANCED INPUT to correct the extracted topology before solving.`]:[])])];
  $('warnings').replaceChildren();for(const w of notes){const n=document.createElement('div');n.className='note';n.textContent='⚠ '+w;$('warnings').append(n);}
 }
 // Equilibrium always governs a body at rest: unknown reactions must be included.
@@ -252,11 +293,19 @@ function renderStudentAnalysis(){
  const target=$('analysisSteps');if(!target)return;target.replaceChildren();
  const add=(heading,body)=>{const block=document.createElement('section');block.className='analysis-step';const title=document.createElement('h3');title.textContent=heading;const para=document.createElement('p');para.textContent=body;block.append(title,para);target.append(block);};
  const u=forceLabel(),length=scene.units,allLoads=(scene.loads||[]).length+(scene.pointLoads||[]).length+(scene.distributedLoads||[]).length;
- add('1. Read the problem',`${scene.summary||scene.title||'Review the diagram.'} ${scene.nodes.length} identified nodes, ${scene.members.length} connecting elements, ${allLoads} load entries. Units: ${u}, ${length}. ${source==='demo'?'Demonstration data: change loads or geometry to explore the outcome.':'Review every extracted or edited magnitude, direction, length and support before trusting the math.'}`);
+ add('1. Read the problem',`${scene.summary||scene.title||'Review the diagram.'} ${scene.nodes.length} identified nodes, ${scene.members.length} connecting elements, ${allLoads} load entries. Units: ${u}, ${length}. ${source==='demo'?(scene.physics?'Reviewed mechanics example: edit the physics object in Advanced Input to change forces/geometry.':'Demonstration data: change loads or geometry to explore the outcome.'):'Review every extracted or edited magnitude, direction, length and support before trusting the math.'}`);
  add('2. Draw the free-body diagram','Isolate the structure. Replace pin restraints with horizontal and vertical reactions; replace rollers with their restrained-direction reaction. Show each external load and its direction. For distributed loads, use the equivalent resultant at its centroid when taking moments.');
  add('3. Apply equilibrium','Because the structure is static, the COMPLETE set of external forces and moments must satisfy ΣFx = 0, ΣFy = 0, and ΣM = 0 in 2D; in 3D all three force and all three moment components must balance. Applied loads alone usually do NOT sum to zero: support reactions and unknown forces complete the balance.');
  if(problem){
   add('4. What can be solved',`A numerical answer is not available for this model: ${problem} The equilibrium equations still apply. Avoid assigning zero to unknown reactions.`);
+ }else if(scene.physics && solution){
+  const entries=Object.entries(solution.unknowns||{}).map(([k,v])=>`${k} = ${fmt(v)} ${u}`);
+  const scalarKeys=Object.entries(solution).filter(([k,v])=>typeof v==='number'&&k!=='maxResidual').slice(0,9).map(([k,v])=>`${k}: ${fmt(v)}`);
+  const vectors=Object.entries(solution).filter(([k,v])=>['R','M'].includes(k)&&Array.isArray(v)).map(([k,v])=>`${k}=(${v.map(x=>fmt(x)).join(', ')}) ${k==='M'?u+'·'+length:u}`);
+  const principles={centroid_polynomial:'Integrate the true polynomial top and bottom boundaries exactly: dA=(y_top−y_bottom)dx, Iy=∫x²dA, and Ix=∫(y_top³−y_bottom³)dx/3.',spring:'Hooke law: F = kδ. Parallel stiffnesses add; series compliances add. First convert masses to weights with W = mg.',rigid2d:'Isolate EACH body. Write ΣFx=0, ΣFy=0 and ΣM=0, include moments from offset forces, springs, rope segments, supports and internal pin reactions.',rigid3d:'Write ΣFx=ΣFy=ΣFz=0 and ΣMx=ΣMy=ΣMz=0. For each applied force use M=r×F; a fixed support can supply three reactions and three reaction couples.',particle:'At the isolated joint, sum each cable tension along its UNIT direction and set all coordinate force components to zero. Cables cannot carry compression.',friction:'Use the appropriate impending-motion model: F_lim = μs N for dry contact; T_high/T_low=e^(μθ) for belt friction; compare sliding and tipping thresholds.',centroid:'For each signed polygon integrate dA, x dA, y dA, x² dA and y² dA. Subtract holes and apply the parallel-axis theorem.',resultant:'Sum the known applied forces and moments about the chosen reference point: R=ΣF and M_O=Σ(r×F)+ΣM_couple.',virtual_work:'Specify a physically compatible virtual displacement. For ideal stationary constraints, total external virtual work is zero.'};
+  add('4. Set up this mechanics model',`${principles[scene.physics.operation]||'Write the governing equilibrium equations.'} ${solution.description||''} Do not assume supports/cables exist unless they were explicitly supplied.`);
+  if(solution.stabilityWarning)add('Model stability warning',solution.stabilityWarning);
+  add('5. Numerical result',`${[...entries,...vectors,...scalarKeys].join('; ')||'See Analysis Output for resultants.'}${solution.maxResidual!==undefined?` Max equation residual: ${fmt(solution.maxResidual)}.`:''} These values are only as accurate as the reviewed input and selected idealizations.`);
  }else if(solution?.type==='beam'){
   const q=solution;
   add('4. Solve the reactions',`Take moments about the left support: R_B × ${fmt(q.span)} ${length} + (${fmt(q.momentApplied)} ${u}·${length}) = 0, so R_B = ${fmt(q.RB)} ${u}. Then ΣFy = 0: R_A + R_B + (${fmt(q.totalApplied)} ${u}) = 0, giving R_A = ${fmt(q.RA)} ${u}.`);
@@ -302,68 +351,77 @@ function project(n){
  const r=canvas.getBoundingClientRect();return {x:r.width/2+xp*view.s*perspective+pan.x,y:r.height/2-yp*view.s*perspective+pan.y,depth};
 }
 function unproject(p){return {x:view.cx+(p.x-canvas.clientWidth/2-pan.x)/view.s,y:view.cy-(p.y-canvas.clientHeight/2-pan.y)/view.s};}
-function line(a,b,color=hudColor('#ffab4a','#13e5fa'),width=3){ctx.strokeStyle=color;ctx.lineWidth=width;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();}
+function line(a,b,color='#13e5fa',width=3){ctx.strokeStyle=color;ctx.lineWidth=width;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();}
 function drawArrow(a,b,color,label){line(a,b,color,2.6);const theta=Math.atan2(b.y-a.y,b.x-a.x);ctx.beginPath();ctx.moveTo(b.x,b.y);ctx.lineTo(b.x-11*Math.cos(theta-.45),b.y-11*Math.sin(theta-.45));ctx.lineTo(b.x-11*Math.cos(theta+.45),b.y-11*Math.sin(theta+.45));ctx.closePath();ctx.fillStyle=color;ctx.fill();if(label){ctx.fillStyle=color;ctx.font='11px JetBrains Mono';ctx.fillText(label,a.x+9,a.y-12);}}
-function drawSupport(n,p){if(n.support==='none')return;ctx.save();ctx.strokeStyle=hudColor('#cfa1ff','#ffcb69');ctx.fillStyle=hudColor('#cfa1ff33','#ffc96833');ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(p.x,p.y+8);ctx.lineTo(p.x-12,p.y+27);ctx.lineTo(p.x+12,p.y+27);ctx.closePath();ctx.fill();ctx.stroke();if(n.support==='roller'){ctx.beginPath();for(let k of [-6,6]){ctx.moveTo(p.x+k+4,p.y+31);ctx.arc(p.x+k,p.y+31,4,0,Math.PI*2);}ctx.stroke();}if(n.support==='fixed'){ctx.beginPath();ctx.moveTo(p.x-18,p.y+31);ctx.lineTo(p.x+18,p.y+31);ctx.stroke();}ctx.restore();}
+function drawSupport(n,p){if(n.support==='none')return;ctx.save();ctx.strokeStyle='#ffcb69';ctx.fillStyle='#ffc96833';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(p.x,p.y+8);ctx.lineTo(p.x-12,p.y+27);ctx.lineTo(p.x+12,p.y+27);ctx.closePath();ctx.fill();ctx.stroke();if(n.support==='roller'){ctx.beginPath();for(let k of [-6,6]){ctx.moveTo(p.x+k+4,p.y+31);ctx.arc(p.x+k,p.y+31,4,0,Math.PI*2);}ctx.stroke();}if(n.support==='fixed'){ctx.beginPath();ctx.moveTo(p.x-18,p.y+31);ctx.lineTo(p.x+18,p.y+31);ctx.stroke();}ctx.restore();}
 function draw(){
  if(!canvas.width||!canvas.height)return;
  const W=canvas.clientWidth,H=canvas.clientHeight;ctx.clearRect(0,0,W,H);setupView();ctx.save();
- ctx.strokeStyle=hudColor('#b575a421','#1f60702b');ctx.lineWidth=1;
+ ctx.strokeStyle='#1f60702b';ctx.lineWidth=1;
  for(let x=0;x<W;x+=30){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
  for(let y=0;y<H;y+=30){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
- if(!scene.nodes.length){if(sourceImage?.complete&&sourceImage.naturalWidth){const ratio=Math.min((W-35)/sourceImage.naturalWidth,(H-75)/sourceImage.naturalHeight);const iw=sourceImage.naturalWidth*ratio,ih=sourceImage.naturalHeight*ratio;ctx.globalAlpha=.82;ctx.drawImage(sourceImage,(W-iw)/2,(H-ih)/2,iw,ih);ctx.globalAlpha=1;}ctx.font='12px JetBrains Mono';ctx.fillStyle=hudColor('#bea0cc','#69aabb');ctx.textAlign='center';ctx.fillText('REFERENCE IMAGE • CHECK EXTRACTION',W/2,H-18);ctx.textAlign='left';ctx.restore();return;}
+ if(!scene.nodes.length){if(sourceImage?.complete&&sourceImage.naturalWidth){const ratio=Math.min((W-35)/sourceImage.naturalWidth,(H-75)/sourceImage.naturalHeight);const iw=sourceImage.naturalWidth*ratio,ih=sourceImage.naturalHeight*ratio;ctx.globalAlpha=.82;ctx.drawImage(sourceImage,(W-iw)/2,(H-ih)/2,iw,ih);ctx.globalAlpha=1;}ctx.font='12px JetBrains Mono';ctx.fillStyle='#69aabb';ctx.textAlign='center';ctx.fillText('REFERENCE IMAGE • CHECK EXTRACTION',W/2,H-18);ctx.textAlign='left';ctx.restore();return;}
  if(orbitMix>.03){
   // perspective groundplane with glowing x/y/z axes; purely illustrative, no fabricated members
   const bb=bounds();const r=Math.max(2,bb.maxX-bb.minX,bb.maxY-bb.minY,bb.maxZ-bb.minZ)*.7;
   const o={x:view.cx,y:view.cy,z:view.cz};
-  for(const axis of [{dx:r,dy:0,dz:0,c:hudColor('#ff8a6b','#ff637e'),l:'X'},{dx:0,dy:r,dz:0,c:hudColor('#b8ff94','#87ffb2'),l:'Y'},{dx:0,dy:0,dz:r,c:hudColor('#c59eff','#72a6ff'),l:'Z'}]){
+  for(const axis of [{dx:r,dy:0,dz:0,c:'#ff637e',l:'X'},{dx:0,dy:r,dz:0,c:'#87ffb2',l:'Y'},{dx:0,dy:0,dz:r,c:'#72a6ff',l:'Z'}]){
    const a=project(o),b=project({x:o.x+axis.dx,y:o.y+axis.dy,z:o.z+axis.dz});ctx.globalAlpha=.48*orbitMix;drawArrow(a,b,axis.c,axis.l);ctx.globalAlpha=1;
   }
   const floor=bb.minY-Math.max(.3,(bb.maxY-bb.minY)*.2);ctx.globalAlpha=.15*orbitMix;
   for(let t=-4;t<=4;t++){
    const h=r*t/4;
-   line(project({x:view.cx-r,y:floor,z:view.cz+h}),project({x:view.cx+r,y:floor,z:view.cz+h}),hudColor('#a26aab','#3cdeee'),1);
-   line(project({x:view.cx+h,y:floor,z:view.cz-r}),project({x:view.cx+h,y:floor,z:view.cz+r}),hudColor('#a26aab','#3cdeee'),1);
+   line(project({x:view.cx-r,y:floor,z:view.cz+h}),project({x:view.cx+r,y:floor,z:view.cz+h}),'#3cdeee',1);
+   line(project({x:view.cx+h,y:floor,z:view.cz-r}),project({x:view.cx+h,y:floor,z:view.cz+r}),'#3cdeee',1);
   }ctx.globalAlpha=1;
  }
  const projected=new Map(scene.nodes.map(n=>[n.id,project(n)]));
+ // Visualize idealized springs and rope wheels without changing solved physics.
+ if(scene.kind==='pulley2d'&&scene.nodes.some(n=>n.id==='P')){
+  const p=projected.get('P');ctx.save();ctx.strokeStyle='#48e4f8';ctx.lineWidth=3;ctx.beginPath();ctx.arc(p.x,p.y,20,0,2*Math.PI);ctx.stroke();ctx.beginPath();ctx.arc(p.x,p.y,5,0,2*Math.PI);ctx.fillStyle='#48e4f8';ctx.fill();ctx.restore();
+ }
+ if(scene.kind==='spring2d'&&scene.nodes.length>=2){
+  const a=projected.get(scene.nodes[0].id),b=projected.get(scene.nodes[1].id),dx=b.x-a.x,dy=b.y-a.y,len=Math.hypot(dx,dy)||1,nx=-dy/len,ny=dx/len;
+  ctx.save();ctx.strokeStyle='#76f7ff';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(a.x,a.y);for(let i=1;i<=16;i++){const t=i/16,offset=i===16?0:(i%2?1:-1)*9;ctx.lineTo(a.x+t*dx+offset*nx,a.y+t*dy+offset*ny);}ctx.stroke();ctx.restore();
+ }
+
  // Solid/hollow polygon regions are used for centroid geometry, not for structural solution.
- for(const region of scene.shapes||[]){const points=(region.points||[]).map(project);if(points.length<3)continue;ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();ctx.fillStyle=region.mode==='cutout'?hudColor('#0b0716','#030914'):hudColor('#e7a0ff20','#16e4ff20');ctx.strokeStyle=hudColor('#e29aff','#1eeeff');ctx.lineWidth=2;ctx.fill();ctx.stroke();if(showLabels){ctx.fillStyle=hudColor('#ffdfbe','#d9fbff');ctx.fillText(region.label||'REGION',points[0].x+5,points[0].y-8);}}
+ for(const region of scene.shapes||[]){const points=(region.points||[]).map(project);if(points.length<3)continue;ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();ctx.fillStyle=region.mode==='cutout'?'#030914':'#16e4ff20';ctx.strokeStyle='#1eeeff';ctx.lineWidth=2;ctx.fill();ctx.stroke();if(showLabels){ctx.fillStyle='#d9fbff';ctx.fillText(region.label||'REGION',points[0].x+5,points[0].y-8);}}
  const edges=scene.members.map((m,i)=>({m,i,a:projected.get(m.a),b:projected.get(m.b)})).filter(e=>e.a&&e.b).sort((a,b)=>(b.a.depth+b.b.depth)-(a.a.depth+a.b.depth));
  for(const e of edges){const {m,i,a,b}=e,f=solution?.type==='truss'?solution.forces[i]:null;
-  const color=f?(f.force>=0?hudColor('#b3ff88','#04ddf6'):hudColor('#ffab5d','#ffb86c')):hudColor('#da9eff','#3ebfd6');
-  if(orbitMix>.04){line({x:a.x+2*orbitMix,y:a.y+3*orbitMix},{x:b.x+2*orbitMix,y:b.y+3*orbitMix},hudColor('#251330','#082a4c'),8);line(a,b,hudColor('#513461','#144d79'),6);line(a,b,color,3.4);}
+  const color=f?(f.force>=0?'#04ddf6':'#ffb86c'):'#3ebfd6';
+  if(orbitMix>.04){line({x:a.x+2*orbitMix,y:a.y+3*orbitMix},{x:b.x+2*orbitMix,y:b.y+3*orbitMix},'#082a4c',8);line(a,b,'#144d79',6);line(a,b,color,3.4);}
   else line(a,b,color,f?4:3);
-  if(showLabels&&f){ctx.fillStyle=hudColor('#ffedd2','#d6faff');ctx.font='10px JetBrains Mono';ctx.fillText(fmt(f.force/forceInKN(),' '+forceLabel()),(a.x+b.x)/2+6,(a.y+b.y)/2-6);}
+  if(showLabels&&f){ctx.fillStyle='#d6faff';ctx.font='10px JetBrains Mono';ctx.fillText(fmt(f.force/forceInKN(),' '+forceLabel()),(a.x+b.x)/2+6,(a.y+b.y)/2-6);}
  }
  if(scene.kind==='beam' && scene.nodes.length>=2){
   for(const d of scene.distributedLoads){
-   const a=project({x:d.from,y:scene.nodes[0].y}),b=project({x:d.to,y:scene.nodes[0].y});const c=hudColor('#dc9bff','#ffcb67');
+   const a=project({x:d.from,y:scene.nodes[0].y}),b=project({x:d.to,y:scene.nodes[0].y});const c='#ffcb67';
    line({x:a.x,y:a.y-67},{x:b.x,y:b.y-67},c,2);
    const steps=Math.max(3,Math.min(20,Math.ceil(Math.abs(b.x-a.x)/24)));
    for(let i=0;i<=steps;i++){const t=i/steps,x=a.x+(b.x-a.x)*t;const m=Math.max(.1,Math.abs(safe(d.w)*(1-t)+safe(d.wEnd,d.w)*t)/Math.max(.01,Math.abs(d.w),Math.abs(d.wEnd||d.w)));drawArrow({x,y:a.y-10-57*m},{x,y:a.y-10},c,'');}
    ctx.fillStyle=c;ctx.font='10px JetBrains Mono';ctx.fillText(d.label||'DISTRIBUTED',a.x,a.y-78);
   }
-  for(const p of scene.pointLoads){const pt=project({x:p.x,y:scene.nodes[0].y});drawArrow({x:pt.x,y:pt.y-92},{x:pt.x,y:pt.y-9},hudColor('#ff6e8c','#ff657f'),p.label||fmt(p.fy));}
+  for(const p of scene.pointLoads){const pt=project({x:p.x,y:scene.nodes[0].y});drawArrow({x:pt.x,y:pt.y-92},{x:pt.x,y:pt.y-9},'#ff657f',p.label||fmt(p.fy));}
   if(solution?.type==='beam'){
    const data=solution.points,scale=Math.max(1e-6,...data.map(v=>Math.abs(v.M))),base=H-58;
-   ctx.strokeStyle=hudColor('#ffc27d','#fdc56b');ctx.lineWidth=2;ctx.beginPath();data.forEach((r,i)=>{const x=project({x:r.x,y:scene.nodes[0].y}).x,y=base-r.M/scale*57;i?ctx.lineTo(x,y):ctx.moveTo(x,y);});ctx.stroke();
-   ctx.fillStyle=hudColor('#ffc27d','#ffcb68');ctx.font='10px JetBrains Mono';ctx.fillText('BENDING MOMENT',12,base-81);
-   ctx.strokeStyle=hudColor('#70496c','#487189');ctx.beginPath();ctx.moveTo(0,base);ctx.lineTo(W,base);ctx.stroke();
+   ctx.strokeStyle='#fdc56b';ctx.lineWidth=2;ctx.beginPath();data.forEach((r,i)=>{const x=project({x:r.x,y:scene.nodes[0].y}).x,y=base-r.M/scale*57;i?ctx.lineTo(x,y):ctx.moveTo(x,y);});ctx.stroke();
+   ctx.fillStyle='#ffcb68';ctx.font='10px JetBrains Mono';ctx.fillText('BENDING MOMENT',12,base-81);
+   ctx.strokeStyle='#487189';ctx.beginPath();ctx.moveTo(0,base);ctx.lineTo(W,base);ctx.stroke();
   }
  }
- for(const n of scene.nodes){const p=projected.get(n.id);drawSupport(n,p);ctx.beginPath();ctx.arc(p.x,p.y,n.id===selected?8:6,0,2*Math.PI);ctx.fillStyle=n.id===selected?hudColor('#ffffff','#ffffff'):hudColor('#ffb04a','#0be8ff');ctx.shadowColor=hudColor('#ffac3b','#00dfff');ctx.shadowBlur=15;ctx.fill();ctx.shadowBlur=0;if(showLabels){ctx.font='bold 12px JetBrains Mono';ctx.fillStyle=hudColor('#ffdfbe','#d9fbff');ctx.fillText(n.id,p.x+10,p.y-11);}}
+ for(const n of scene.nodes){const p=projected.get(n.id);drawSupport(n,p);ctx.beginPath();ctx.arc(p.x,p.y,n.id===selected?8:6,0,2*Math.PI);ctx.fillStyle=n.id===selected?'#ffffff':'#0be8ff';ctx.shadowColor='#00dfff';ctx.shadowBlur=15;ctx.fill();ctx.shadowBlur=0;if(showLabels){ctx.font='bold 12px JetBrains Mono';ctx.fillStyle='#d9fbff';ctx.fillText(n.id,p.x+10,p.y-11);}}
  for(const l of scene.loads){const n=node(l.node);if(!n)continue;const p=projected.get(n.id),fx=safe(l.fx)*mult,fy=safe(l.fy)*mult,fz=safe(l.fz)*mult;if(!fx&&!fy&&!fz)continue;
   const size=60/(Math.hypot(fx,fy,fz)||1),tip=project({x:n.x+fx*size/view.s,y:n.y+fy*size/view.s,z:(n.z||0)+fz*size/view.s});
   // Draw arrow toward the point of action, with head exactly at the joint.
   let dx=tip.x-p.x,dy=tip.y-p.y,mg=Math.hypot(dx,dy)||1;
-  const start={x:p.x-dx/mg*66,y:p.y-dy/mg*66};drawArrow(start,p,hudColor('#ff8a6b','#ff637e'),showLabels?(l.label||fmt(Math.hypot(fx,fy,fz),' '+forceLabel())):'');
+  const start={x:p.x-dx/mg*66,y:p.y-dy/mg*66};drawArrow(start,p,'#ff637e',showLabels?(l.label||fmt(Math.hypot(fx,fy,fz),' '+forceLabel())):'');
  }
  for(const c of scene.couples||[]){const n=node(c.node),p=n&&projected.get(n.id);if(!p)continue;
-  ctx.strokeStyle=hudColor('#bc98fa','#f5b86a');ctx.lineWidth=2;ctx.beginPath();ctx.arc(p.x,p.y,24,.4,5.6,c.mz<0);ctx.stroke();ctx.fillStyle=hudColor('#eeb2ff','#ffc968');if(showLabels)ctx.fillText(c.label||'M',p.x+25,p.y-24);
+  ctx.strokeStyle='#f5b86a';ctx.lineWidth=2;ctx.beginPath();ctx.arc(p.x,p.y,24,.4,5.6,c.mz<0);ctx.stroke();ctx.fillStyle='#ffc968';if(showLabels)ctx.fillText(c.label||'M',p.x+25,p.y-24);
  }
- if(buildStart){const p=projected.get(buildStart);if(p){ctx.strokeStyle=hudColor('#f9a960','#ffe288');ctx.beginPath();ctx.arc(p.x,p.y,14,0,Math.PI*2);ctx.stroke();}}
- ctx.fillStyle=hudColor('#bb9cc4','#598da4');ctx.font='10px JetBrains Mono';ctx.fillText(show3d?'3D • DRAG TO ORBIT • AUTO MOTION':'2D • PHYSICAL PLANE',14,H-15);ctx.restore();
+ if(buildStart){const p=projected.get(buildStart);if(p){ctx.strokeStyle='#ffe288';ctx.beginPath();ctx.arc(p.x,p.y,14,0,Math.PI*2);ctx.stroke();}}
+ ctx.fillStyle='#598da4';ctx.font='10px JetBrains Mono';ctx.fillText(show3d?'3D • DRAG TO ORBIT • AUTO MOTION':'2D • PHYSICAL PLANE',14,H-15);ctx.restore();
 }
 const pos=e=>{const r=canvas.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top};};
 function hit(p){let result=null,dist=16;for(const n of scene.nodes){const q=project(n),d=Math.hypot(p.x-q.x,p.y-q.y);if(d<dist){dist=d;result=n.id;}}return result;}
@@ -378,7 +436,7 @@ loadDialog?.addEventListener('close',()=>{
  scene.loads=scene.loads.filter(l=>l.node!==pendingLoadNode);if(value!==0)scene.loads.push({node:pendingLoadNode,fx:0,fy:value,fz:0,label:`${Math.abs(value)} ${forceLabel()}`});pendingLoadNode=null;sync();
 });
 canvas.addEventListener('pointerdown',e=>{canvas.setPointerCapture(e.pointerId);const p=pos(e),id=hit(p);if(mode==='delete'&&id){scene.members=scene.members.filter(m=>m.a!==id&&m.b!==id);scene.loads=scene.loads.filter(l=>l.node!==id);scene.nodes=scene.nodes.filter(n=>n.id!==id);sync();return;}if(mode==='build'){if(!id)return;if(!buildStart){buildStart=id;}else if(buildStart!==id&&!scene.members.some(m=>(m.a===buildStart&&m.b===id)||(m.a===id&&m.b===buildStart))){scene.members.push({a:buildStart,b:id});buildStart=null;sync();}else buildStart=null;draw();return;}if(mode==='load'&&id){openLoadDialog(id);return;}selected=id;drag={p,start:pos(e),id,pan:{...pan},angle,tilt,original:id?{...node(id)}:null};draw();});
-canvas.addEventListener('pointermove',e=>{if(!drag)return;const p=pos(e),dx=p.x-drag.start.x,dy=p.y-drag.start.y;if(drag.id&&!show3d&&mode==='select'){const n=node(drag.id);n.x=drag.original.x+dx/view.s;n.y=drag.original.y-dy/view.s;scheduleSolve();}else if(show3d){angle=drag.angle+dx/145;tilt=Math.max(-1.1,Math.min(1.15,drag.tilt+dy/250));orbitedAt=performance.now();draw();}else if(!drag.id){pan.x=drag.pan.x+dx;pan.y=drag.pan.y+dy;draw();}});
+canvas.addEventListener('pointermove',e=>{if(!drag)return;const p=pos(e),dx=p.x-drag.start.x,dy=p.y-drag.start.y;if(drag.id&&!show3d&&mode==='select'&&!scene.physics){const n=node(drag.id);n.x=drag.original.x+dx/view.s;n.y=drag.original.y-dy/view.s;scheduleSolve();}else if(show3d){angle=drag.angle+dx/145;tilt=Math.max(-1.1,Math.min(1.15,drag.tilt+dy/250));orbitedAt=performance.now();draw();}else if(!drag.id){pan.x=drag.pan.x+dx;pan.y=drag.pan.y+dy;draw();}});
 canvas.addEventListener('pointerup',()=>{if(drag?.id)sync();drag=null;});canvas.addEventListener('pointercancel',()=>{drag=null;});canvas.addEventListener('wheel',e=>{e.preventDefault();zoom=Math.max(.25,Math.min(5,zoom*(e.deltaY>0?.9:1.1)));draw();},{passive:false});
 function sync(){try{validate(scene);}catch(e){showError(e.message);} $('sceneJson').value=JSON.stringify(scene,null,2);solveAndRender();}
 function showError(t){$('error').hidden=!t;$('error').textContent=t||'';}
@@ -390,6 +448,8 @@ $('export').onclick=()=>{const blob=new Blob([JSON.stringify(scene,null,2)],{typ
 let currentFile=null,sourceImage=null;
 function useFile(file){
  showError('');if(!file)return;
+ currentFile=null;$('analyze').disabled=true;
+ if(!file.size){showError('This file is empty. Choose a valid image or PDF.');return;}
  if(!['image/png','image/jpeg','image/webp','application/pdf'].includes(file.type)){showError('Please select a JPG, PNG, WebP or PDF.');return;}
   if(file.type==='application/pdf'&&file.size>3*1024*1024){showError('PDF must be under 3 MB. For a multi-page exam, screenshot one question as JPG.');return;}
  if(file.type!=='application/pdf'&&file.size>22*1024*1024){showError('Please choose an image under 22 MB.');return;}
@@ -399,7 +459,8 @@ function useFile(file){
  $('status').textContent='● LOADED';
 }
 $('choose').onclick=()=>$('file').click();$('drop').onclick=()=>$('file').click();
-$('file').onchange=e=>useFile(e.target.files?.[0]);
+$('drop').addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();$('file').click();}});
+$('file').onchange=e=>{const picked=e.target.files?.[0];e.target.value='';useFile(picked);};
 $('drop').ondragover=e=>{e.preventDefault();$('drop').classList.add('dragging');};
 $('drop').ondragleave=()=>$('drop').classList.remove('dragging');
 $('drop').ondrop=e=>{e.preventDefault();$('drop').classList.remove('dragging');useFile(e.dataTransfer.files?.[0]);};
@@ -423,25 +484,24 @@ async function requestSceneAnalysis(encoded){
  const payload={model:$('model').value,...encoded,detailed:$('detailed')?.checked||false};
  const directPayload={apiKey:$('apiKey').value,...payload};
  const serverPayload={model:payload.model,base64:payload.base64,mimeType:payload.mimeType,detailed:payload.detailed};
- // Netlify deployments use the same-origin function. GitHub Pages and a
- // static Python server return 404, so fall back to the browser Gemini adapter.
+ // Prefer a same-origin backend. Static hosts have no backend, so their
+ // 404/405/501 responses are an explicit signal to use a personal browser key.
  const apiUrl=new URL('../api/analyze',location.href);
+ let response;
  try{
-  const response=await fetch(apiUrl,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(serverPayload)});
-  // Python's http.server returns 501 for POST; GitHub Pages commonly returns
-  // 404. All three statuses mean there is no same-origin function to use.
-  if(![404,405,501].includes(response.status)){
-   const data=await response.json().catch(()=>({error:'The analysis API returned unreadable data.'}));
-   if(!response.ok){
-    if(data.code!=='SERVER_NOT_CONFIGURED')throw Error(data.error||`Scan HTTP ${response.status}`);
-   }else return data;
-  }
- }catch(error){
-  // Only network failure is eligible for the static-host fallback. A real
-  // backend error should remain visible instead of being hidden.
-  if(error?.message&&/Scan HTTP|analysis API|Gemini|key|image|HTTP/.test(error.message)&&!/Failed to fetch|NetworkError|Load failed/i.test(error.message))throw error;
+  response=await fetch(apiUrl,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(serverPayload)});
+ }catch(networkError){
+  // A missing network connection cannot be rescued by a direct Google request.
+  throw Error('Cannot reach the analysis service. Check your connection and try again.');
  }
- if(!window.TVGemini?.analyze)throw Error('AI scanning is unavailable right now. Check your key and try again.');
+ if(![404,405,501].includes(response.status)){
+  let data;
+  try{data=await response.json();}catch{throw Error('The analysis API returned unreadable data.');}
+  if(response.ok)return data;
+  if(data?.code!=='SERVER_NOT_CONFIGURED')throw Error(data?.error||`Scan HTTP ${response.status}`);
+ }
+ if(!window.TVGemini?.analyze)throw Error('Direct image scanning is unavailable.');
+ if(!directPayload.apiKey.trim())throw Error('Static hosting requires a Google AI Studio API key. Open AI Settings to add yours.');
  $('latency').textContent='Reading diagram…';
  return window.TVGemini.analyze(directPayload);
 }

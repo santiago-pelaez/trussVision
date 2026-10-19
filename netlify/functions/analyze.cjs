@@ -1,7 +1,7 @@
 'use strict';
 // TrussVision Mark V: image digitizer. Never executes model-produced code.
 const MODELS = new Set(['gemini-3.8-flash', 'gemini-4-argon', 'gemini-3.6-flash']);
-const TYPES = new Set(['truss','beam','frame2d','force2d','friction2d','pulley2d','centroid2d','cable3d','vector3d','machine3d','other2d','unknown']);
+const TYPES = new Set(['truss','beam','frame2d','force2d','friction2d','pulley2d','spring2d','centroid2d','cable3d','vector3d','machine3d','other2d','unknown']);
 const SPATIAL = new Set(['cable3d','vector3d','machine3d']);
 const PROMPT = `You are the optical interpretation component of an interactive university STATICS TEACHING TOOL. Extract from the PRINTED problem and its original diagram. Student handwritten solutions are NOT ground truth. Return one JSON object ONLY.
 
@@ -20,7 +20,7 @@ JSON fields (always include arrays, may be empty):
 "nodes":[{"id":"A","x":0,"y":0,"z":0,"support":"none|pin|roller|fixed"}],
 "members":[{"a":"A","b":"B"}],
 "loads":[{"node":"A","fx":0,"fy":-10,"fz":0,"label":"10 lb down"}],
-"pointLoads":[{"x":4,"fy":-12,"label":"12 lb"}],
+"pointLoads":[{"x":4,"fx":0,"fy":-12,"label":"12 lb"}],
 "distributedLoads":[{"from":0,"to":4,"w":-5,"wEnd":-5,"label":"5 lb/ft"}],
 "couples":[{"node":"A","mx":0,"my":0,"mz":20,"label":"20 lb-ft CW"}],
 "shapes":[{"label":"Region 1","mode":"solid|cutout","points":[{"x":0,"y":0,"z":0}]}],
@@ -28,6 +28,19 @@ JSON fields (always include arrays, may be empty):
 "warnings":[], "questions":[], "studySteps":["Identify free-body diagrams"],
 "explanation":"What was extracted directly vs visually approximated; assumptions and any unsupported solver case."
 }
+
+OPTIONAL DETERMINISTIC PHYSICS DATA — populate "physics" only when the printed question gives enough information for the specified model. Otherwise OMIT physics and explain exactly what input is missing. Examples of supported schemas:
+- Spring: "physics":{"operation":"spring","arrangement":"parallel|series","stiffnesses":[27.1],"massesKg":[0.717,0.336],"g":9.81} (stiffness N/mm => extension mm, stiffness N/m => extension m).
+- Ideal pulley/rope: "physics":{"operation":"rigid2d","bodies":[{"id":"pulley","forces":[{"at":[0,0],"value":[0,-100]}]}],"ropes":[{"id":"R1","segments":[{"body":"pulley","at":[0,0],"direction":[0,1]},{"body":"pulley","at":[0,0],"direction":[0,1]}]}]} (ropes must have explicit correct segment directions, frictionless same tension).
+- Particle cables: "physics":{"operation":"particle","dimension":2,"forces":[[0,-100]],"tensions":[{"id":"TA","direction":[-1,1]},{"id":"TB","direction":[1,1]}]}.
+- Planar rigid body / frame: "physics":{"operation":"rigid2d","bodies":[{"id":"body","forces":[{"at":[2,0],"value":[0,-20]}],"supports":[{"id":"wall","type":"fixed","at":[0,0]}]}]}; supports can be pin, roller, fixed, direction (with direction vector). Connected bodies can have "joints":[{"id":"J","bodyA":"left","bodyB":"right","atA":[2,0],"atB":[2,0]}]. Springs on bodies have [at,direction,k,extension]. Never invent frictionless support type.
+- 3D rigid body: "physics":{"operation":"rigid3d","forces":[{"at":[-20,39,59],"value":[8,17,-21]}],"couples":[[0,0,-183]],"supports":[{"id":"O","type":"fixed","at":[0,0,0]}]}. All six fixed-support reactions are unknowns. Bearings need explicitly defined directional constraints; don't assume a fixed bearing.
+- 2D/3D known force system: "physics":{"operation":"resultant","dimension":3,"forces":[{"at":[-20,39,59],"value":[8,17,-21]}],"couples":[[0,0,-183]]}; this yields moment/resultant, not supports unless support model provided.
+- Polynomial-bounded curved region: "physics":{"operation":"centroid_polynomial","regions":[{"xMin":0,"xMax":15,"top":[0,0,0.06666666666666667],"bottom":[0,-0.5]}]}. Coefficients are c0,c1,c2 for y=c0+c1*x+c2*x²; preserve unit and use only explicitly stated polynomial boundaries.
+- Polygon centroid: "physics":{"operation":"centroid","regions":[{"points":[[0,0],[4,0],[4,4],[0,4]]},{"cutout":true,"points":[[1,1],[3,1],[3,3],[1,3]]}]}; ONLY for true straight-edged polygons. Curved boundaries need a separate analytical specification.
+- Friction: "physics":{"operation":"friction","model":"belt","highTension":44,"mu":0.43,"wrapRadians":6.283185307179586}, or "model":"slide_tipping" with weight,width,pushHeight,muStatic, or "model":"incline" with weight,angleRadians,muStatic,parallelApplied.
+- Virtual work: use operation "virtual_work" ONLY IF compatible virtual displacement/rotation coefficients are explicitly given, otherwise visualization only.
+CRITICAL: physics is a mathematical model, NOT your guess of an answer. DO NOT create imaginary forces, supports, rope paths, spring extensions, friction coefficients or dimensions. Do NOT confuse tension, mass, weight, stiffness, angle units, geometric height or reaction force. Use explicit printed units and annotate assumptions.
 
 REQUIREMENTS:
 1. 3D ONLY if the actual physics uses three spatial coordinates, a genuine spatial vector or mechanism, or 3D moment/bearing equations. Do NOT classify a perspective drawing as 3D when all physical forces are planar. For true 3D set spatial=true and use real noncoplanar z values if known; otherwise choose explicitly illustrative relative z geometry and warn. 2D = spatial:false, z=0.
@@ -41,6 +54,15 @@ REQUIREMENTS:
 function toNumber(v, def=0){const n=Number(v);return v!==null && v!==undefined && v!=='' && Number.isFinite(n)?Math.max(-1e9,Math.min(1e9,n)):def;}
 function str(v,max=150){return String(v??'').slice(0,max).replace(/[\u0000-\u001f]/g,' ');}
 function arr(v,n){return Array.isArray(v)?v.slice(0,n):[];}
+function extractPhysics(value){
+ if(!value||typeof value!=='object'||Array.isArray(value))return undefined;
+ const operations=new Set(['spring','rigid2d','rigid3d','particle','centroid','centroid_polynomial','friction','resultant','virtual_work']);
+ if(!operations.has(value.operation))return undefined;
+ const json=JSON.stringify(value);if(json.length>14000)return undefined;
+ const clean=JSON.parse(json);
+ const finite=(x,d=0)=>d<=9&&(x===null||typeof x==='string'||typeof x==='boolean'||typeof x==='number'&&Number.isFinite(x)||Array.isArray(x)&&x.length<=80&&x.every(y=>finite(y,d+1))||typeof x==='object'&&!Array.isArray(x)&&Object.keys(x).length<=50&&Object.values(x).every(y=>finite(y,d+1)));
+ return finite(clean)?clean:undefined;
+}
 function sanitizeScene(raw){
  if(!raw || typeof raw!=='object' || Array.isArray(raw))throw Error('Gemini did not return a scene object.');
  const kind=TYPES.has(raw.kind)?raw.kind:'unknown';const spatial=SPATIAL.has(kind);
@@ -49,19 +71,21 @@ function sanitizeScene(raw){
  const ids=new Set(nodes.map(n=>n.id));
  const members=arr(raw.members,75).map(m=>({a:str(m?.a,18),b:str(m?.b,18)})).filter(m=>ids.has(m.a)&&ids.has(m.b)&&m.a!==m.b);
  const loads=arr(raw.loads,30).map(l=>({node:str(l?.node,18),fx:toNumber(l?.fx),fy:toNumber(l?.fy),fz:spatial?toNumber(l?.fz):0,label:str(l?.label,70)})).filter(l=>ids.has(l.node));
- const pointLoads=arr(raw.pointLoads,35).map(p=>({x:toNumber(p?.x),fy:toNumber(p?.fy),label:str(p?.label,70)}));
+ const pointLoads=arr(raw.pointLoads,35).map(p=>({x:toNumber(p?.x),fx:toNumber(p?.fx),fy:toNumber(p?.fy),label:str(p?.label,70)}));
  const distributedLoads=arr(raw.distributedLoads,35).map(d=>({from:toNumber(d?.from),to:toNumber(d?.to),w:toNumber(d?.w),wEnd:toNumber(d?.wEnd,toNumber(d?.w)),label:str(d?.label,70)}));
- const couples=arr(raw.couples,20).map(c=>({node:str(c?.node,18),mx:spatial?toNumber(c?.mx):0,my:spatial?toNumber(c?.my):0,mz:toNumber(c?.mz),label:str(c?.label,70)})).filter(c=>ids.has(c.node));
+ const couples=arr(raw.couples,20).map(c=>({node:str(c?.node,18),x:c?.x===undefined?undefined:toNumber(c.x),mx:spatial?toNumber(c?.mx):0,my:spatial?toNumber(c?.my):0,mz:toNumber(c?.mz),label:str(c?.label,70)})).filter(c=>ids.has(c.node)||(kind==='beam'&&Number.isFinite(c.x)));
  const shapes=arr(raw.shapes,20).map(s=>({label:str(s?.label,70),mode:s?.mode==='cutout'?'cutout':'solid',points:arr(s?.points,50).map(p=>({x:toNumber(p?.x),y:toNumber(p?.y),z:spatial?toNumber(p?.z):0}))})).filter(s=>s.points.length>=3);
+ const physics=extractPhysics(raw.physics);
  const warnings=arr(raw.warnings,12).map(v=>str(v,220));
  const questions=arr(raw.questions,10).map(v=>str(v,220));
  const units=['m','ft','in','relative'].includes(raw.units)?raw.units:'relative';
  const forceUnit=['kN','N','lb'].includes(raw.forceUnit)?raw.forceUnit:'unknown';
+ if(physics)warnings.push('AI-extracted mechanics input: review each mass, direction, constraint, support and unit before using its calculated answer.');
  if(units==='relative')warnings.push('Coordinates are illustrative; quantitative structural solver is disabled until real dimensions are confirmed.');
- if(kind==='beam'&&distributedLoads.some(d=>Math.abs(d.w-d.wEnd)>1e-8))warnings.push('Linearly varying distributed load shown; elementary simple-beam solver does not cover this case yet.');
- if(spatial)warnings.push('3D vector display is educational; full 3D machine/cable equilibrium is not automatically solved.');
+ if(kind==='beam'&&distributedLoads.some(d=>Math.abs(d.w-d.wEnd)>1e-8))warnings.push('Linearly varying load extracted: verify start and end intensities before using the beam solver.');
+ if(spatial&&!physics)warnings.push('3D geometry is a preview until all spatial force and reaction constraints are specified.');
  return {kind,spatial,title:str(raw.title,95),summary:str(raw.summary,450),confidence:Math.min(1,Math.max(0,toNumber(raw.confidence,0))),units,forceUnit,
- nodes,members,loads,pointLoads,distributedLoads,couples,shapes,dimensions:arr(raw.dimensions,25).map(d=>({label:str(d?.label,90),value:toNumber(d?.value)})),warnings,questions,studySteps:arr(raw.studySteps,5).map(s=>str(s,160)),explanation:str(raw.explanation,1000)};
+ nodes,members,loads,pointLoads,distributedLoads,couples,shapes,physics,dimensions:arr(raw.dimensions,25).map(d=>({label:str(d?.label,90),value:toNumber(d?.value)})),warnings,questions,studySteps:arr(raw.studySteps,5).map(s=>str(s,160)),explanation:str(raw.explanation,1000)};
 }
 const json=(statusCode,data)=>({statusCode,headers:{'Content-Type':'application/json','Cache-Control':'no-store','Access-Control-Allow-Origin':'same-origin'},body:JSON.stringify(data)});
 exports.handler=async event=>{

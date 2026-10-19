@@ -63,3 +63,27 @@ button:disabled{cursor:not-allowed}
 .dialog-warning{margin:0;color:var(--amber);font-size:10px;line-height:1.6}
 .dialog-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
 @media(max-width:730px){.workflow{grid-template-columns:1fr}.workflow-step{grid-template-columns:auto 1fr}.settings-details{width:100%}.settings-body{position:static;width:100%;margin-top:7px}.header-actions{width:100%}.header-actions button{flex:1}.dialog-actions{flex-direction:column-reverse}.dialog-actions button{width:100%}}
+
+/* Neutral structural analysis identity — accessible, restrained workbench polish. */
+:root{color-scheme:dark}
+.brand-mark{width:38px;height:38px;flex:none;display:inline-grid;place-items:center;color:#071724;background:linear-gradient(145deg,#8be3ed,#22bacd);border:1px solid #a1f3f8;border-radius:10px;font:800 26px/1 Arial,sans-serif;box-shadow:0 3px 18px #19c7d826}
+.header{background:linear-gradient(120deg,#071b2a,#0b2234 70%,#0b1c30)}
+.panel{box-shadow:0 5px 18px #0000001c;border-color:#24475c}
+.primary,.outline,.toolbar button{transition:background-color .15s ease,border-color .15s ease,transform .15s ease}
+button:not(:disabled){cursor:pointer}
+button:not(:disabled):active{transform:translateY(1px)}
+.upload{transition:border-color .16s ease,background-color .16s ease}
+.upload:hover,.upload:focus-within{border-color:#72dfea;background:#092539}
+.canvas-panel{border-color:#2b6178}
+#stage{min-height:280px}
+input[type=number]{font-variant-numeric:tabular-nums}
+@media(max-width:730px){.app{padding:9px}.brand strong{font-size:16px;letter-spacing:1px}.header{padding:12px}.sidebar{padding:14px}.canvas-panel{height:auto;min-height:490px}.canvas-top,.canvas-foot{padding:11px}.workflow-step{padding:9px 11px}}
+@media(prefers-reduced-motion:reduce){.primary,.outline,.toolbar button,.upload{transition:none}}
+
+/* Production usability refinements. */
+.settings-body a{color:#82e8f3;text-decoration:underline;text-underline-offset:3px}
+.settings-body a:hover{color:#fff}
+.upload:focus-visible{outline:2px solid var(--amber);outline-offset:3px}
+.upload[role=button]{cursor:pointer}
+.app-dialog input:invalid{border-color:var(--red)}
+@media(max-width:730px){.settings-details{min-width:0}.settings-body{width:100%}.header{gap:12px}.upload{padding:12px}.section-head{line-height:1.5}}

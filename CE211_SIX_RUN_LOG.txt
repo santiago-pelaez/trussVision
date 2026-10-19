@@ -1,0 +1,60 @@
+===== validation run 1 / 6 =====
+Sonuç: 210 başarılı, 0 başarısız
+
+TrussVision result: 17 passed, 0 failed
+
+All truss regressions passed.
+PASS: 8 beam and spatial validation cases (reaction/moment/shear/equilibrium/geometry).
+CE211 reference validation PASS: 25 independent numeric assertions
+Deployment check passed (79 referenced files).
+RUN 1 PASS
+===== validation run 2 / 6 =====
+Sonuç: 210 başarılı, 0 başarısız
+
+TrussVision result: 17 passed, 0 failed
+
+All truss regressions passed.
+PASS: 8 beam and spatial validation cases (reaction/moment/shear/equilibrium/geometry).
+CE211 reference validation PASS: 25 independent numeric assertions
+Deployment check passed (79 referenced files).
+RUN 2 PASS
+===== validation run 3 / 6 =====
+Sonuç: 210 başarılı, 0 başarısız
+
+TrussVision result: 17 passed, 0 failed
+
+All truss regressions passed.
+PASS: 8 beam and spatial validation cases (reaction/moment/shear/equilibrium/geometry).
+CE211 reference validation PASS: 25 independent numeric assertions
+Deployment check passed (79 referenced files).
+RUN 3 PASS
+===== validation run 4 / 6 =====
+Sonuç: 210 başarılı, 0 başarısız
+
+TrussVision result: 17 passed, 0 failed
+
+All truss regressions passed.
+PASS: 8 beam and spatial validation cases (reaction/moment/shear/equilibrium/geometry).
+CE211 reference validation PASS: 25 independent numeric assertions
+Deployment check passed (79 referenced files).
+RUN 4 PASS
+===== validation run 5 / 6 =====
+Sonuç: 210 başarılı, 0 başarısız
+
+TrussVision result: 17 passed, 0 failed
+
+All truss regressions passed.
+PASS: 8 beam and spatial validation cases (reaction/moment/shear/equilibrium/geometry).
+CE211 reference validation PASS: 25 independent numeric assertions
+Deployment check passed (79 referenced files).
+RUN 5 PASS
+===== validation run 6 / 6 =====
+Sonuç: 210 başarılı, 0 başarısız
+
+TrussVision result: 17 passed, 0 failed
+
+All truss regressions passed.
+PASS: 8 beam and spatial validation cases (reaction/moment/shear/equilibrium/geometry).
+CE211 reference validation PASS: 25 independent numeric assertions
+Deployment check passed (79 referenced files).
+RUN 6 PASS
