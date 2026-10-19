@@ -25,6 +25,9 @@ console.log('\nTrussVision contracts');
 
 const html = read('trussvision/index.html');
 const app = read('trussvision/app.js');
+const independentAdapter = require(path.join(ROOT, 'trussvision', 'core', 'adapter.js'));
+check(!independentAdapter.assess({kind:'frame2d',units:'relative',forceUnit:'N',physics:{operation:'rigid2d',bodies:[{id:'R',forces:[],supports:[{id:'A',type:'pin',at:[0,0]}]}]}}).ok, 'canonical adapter rejects illustrative coordinates for support reactions');
+check(!/12\.1,0.*-63/.test(read('trussvision/gemini-client.js')), 'scan prompt does not seed the photographed exam answer as an example');
 const exporter = read('trussvision/vetin-export.js');
 const server = read('netlify/functions/analyze.cjs');
 
@@ -114,7 +117,7 @@ const horizontal = adapter.convert({...beam, pointLoads:[{x:5,fx:100,fy:0}]});
 check(horizontal.concentratedLoads.length === 1 && horizontal.concentratedLoads[0].angle === 0 &&
   Math.abs(horizontal.concentratedLoads[0].magnitude-0.444822)<1e-6, 'beam export retains horizontal point-load component');
 check(/role="button" tabindex="0"/.test(html) && /key==='Enter'\|\|event.key===' '/.test(app), 'upload area supports keyboard interaction');
-check(/aistudio.google.com\/apikey/.test(html) && /PUBLISHING_GUIDE.md/.test(read('README.md')), 'onboarding links to the correct key page and publishing guide');
+check(/aistudio.google.com\/apikey/.test(read('trussvision/workbench.html')) && /Get an API key/.test(read('trussvision/workbench.html')), 'the public studio links directly to Google AI Studio API keys');
 
 console.log(`\nTrussVision result: ${passed} passed, ${failed} failed\n`);
 process.exit(failed ? 1 : 0);

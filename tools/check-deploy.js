@@ -9,7 +9,9 @@ const path = require('path');
 
 const ROOT = path.join(__dirname, '..');
 const ENTRIES = [
-    { name: 'TrussVision', root: 'trussvision', html: 'trussvision/index.html' },
+    { name: 'TrussVision landing', root: 'trussvision', html: 'trussvision/index.html' },
+    { name: 'Statics Studio', root: 'trussvision', html: 'trussvision/workbench.html' },
+    { name: 'Legacy TrussVision', root: 'trussvision', html: 'trussvision/legacy.html' },
     { name: 'Vetin', root: 'vetin', html: 'vetin/index.html', sw: 'vetin/sw.js', manifest: 'vetin/manifest.json' }
 ];
 
@@ -88,24 +90,25 @@ function checkDeploy(root = ROOT) {
 
         const references = readHtmlReferences(root, entry);
         const html = fs.readFileSync(path.join(root, entry.html), 'utf8');
-        if (entry.root === 'trussvision' && /<a\b[^>]*\bhref=["'][^"']*vetin/i.test(html)) {
-            errors.push('trussvision/index.html contains a direct Vetin link');
-        }
-        if (entry.root === 'trussvision') {
+        if (entry.html === 'trussvision/index.html' && (!/id="workflowScan"/.test(html) || !/id="stage"/.test(html))) errors.push('TrussVision landing must retain the original interactive workflow, not redirect');
+        if (entry.html === 'trussvision/legacy.html') {
             const app = fs.readFileSync(path.join(root, 'trussvision', 'app.js'), 'utf8');
             const exporter = fs.readFileSync(path.join(root, 'trussvision', 'vetin-export.js'), 'utf8');
             if (/Netlify uses the server function when available/i.test(html)) {
-                errors.push('trussvision/index.html contains the retired deployment warning');
+                errors.push('legacy HTML contains the retired deployment warning');
             }
             if (/\b(prompt|confirm|alert)\s*\(/.test(app + exporter)) {
                 errors.push('TrussVision still uses a browser-native dialog');
             }
             if (!/id="workflowScan"/.test(html) || !/id="workflowReview"/.test(html) || !/id="workflowSolve"/.test(html)) {
-                errors.push('trussvision/index.html is missing the guided workflow');
+                errors.push('legacy TrussVision is missing guided workflow');
             }
             if (!/id="loadDialog"/.test(html) || !/id="transferDialog"/.test(html)) {
-                errors.push('trussvision/index.html is missing the in-app dialogs');
+                errors.push('legacy TrussVision is missing in-app dialogs');
             }
+        }
+        if (entry.html === 'trussvision/workbench.html') {
+            if (!/id="modelCanvas"/.test(html) || !/core\/editor\.js/.test(html) || !/id="solve"/.test(html)) errors.push('new studio lacks its connected graph editor or solve controls');
         }
         if (entry.root === 'vetin' && !/tvimport/.test(html)) {
             errors.push('vetin/index.html is missing the explicit handoff guard');

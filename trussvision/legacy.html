@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>TrussVision | AI-Assisted Statics Workbench</title>
+  <meta name="description" content="Explore engineering statics with reviewed AI diagram extraction, interactive structural visualizations, and deterministic mechanics examples.">
+  <meta name="theme-color" content="#081321">
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <div class="grid-bg"></div>
+  <div class="app">
+    <header class="panel header">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">△</span>
+        <div><strong>TRUSS<span>VISION</span>.AI</strong><small>AZHAN MOHAMMED + SANTIAGO PELAEZ</small></div>
+      </div>
+      <details class="settings-details">
+        <summary>AI SETTINGS</summary>
+        <div class="settings-body">
+          <label for="apiKey">OPTIONAL AI KEY</label>
+          <input id="apiKey" type="password" placeholder="Session key for image scans" autocomplete="off" aria-describedby="keyHelp">
+          <select id="model" aria-label="AI model">
+            <option value="gemini-3.8-flash">3.8 FLASH - FAST</option>
+            <option value="gemini-4-argon">GEMINI 4 ARGON - DEEP</option>
+            <option value="gemini-3.6-flash">3.6 FLASH</option>
+          </select>
+          <small id="keyHelp">Demos work without a key. On GitHub Pages, scans use your own key for this session. Never share or commit API keys. <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">Get a key from Google AI Studio ↗</a></small>
+        </div>
+      </details>
+      <div class="header-actions">
+        <button id="threeD" class="outline">2D VIEW - LOCKED</button>
+        <button id="fit" class="outline">FIT VIEW</button>
+      </div>
+    </header>
+
+    <nav class="workflow" aria-label="TrussVision workflow">
+      <div id="workflowScan" class="workflow-step active"><span>01</span><strong>SCAN</strong><small>Choose a diagram</small></div>
+      <div id="workflowReview" class="workflow-step"><span>02</span><strong>REVIEW</strong><small>Check geometry and loads</small></div>
+      <div id="workflowSolve" class="workflow-step"><span>03</span><strong>SOLVE</strong><small>Inspect results</small></div>
+    </nav>
+
+    <main class="workspace">
+      <aside class="panel sidebar">
+        <section>
+          <div class="section-head">01 // CHOOSE DIAGRAM <span id="status" class="healthy">READY</span></div>
+          <p class="section-intro">Start with a built-in example or upload one clear statics problem.</p>
+          <div id="drop" class="upload" role="button" tabindex="0" aria-label="Upload an engineering problem image or small PDF">
+            <div class="upload-glyph">&#9678;</div>
+            <strong>DROP A DIAGRAM HERE</strong>
+            <small>TRUSS // BEAM // FRAME // PULLEY // CABLE // 3D MACHINE</small>
+            <small>PNG - JPG - WEBP - PDF (SMALL)</small>
+            <img id="thumb" alt="Uploaded diagram preview" hidden>
+          </div>
+          <input type="file" id="file" accept="image/png,image/jpeg,image/webp,application/pdf" hidden>
+          <div class="twocol"><button id="choose" class="primary">SELECT IMAGE</button><button id="analyze" class="primary accent" disabled>SCAN -&gt;</button></div>
+          <div id="latency" class="scan-time" aria-live="polite">Ready for your diagram</div>
+          <label class="option-check"><input type="checkbox" id="detailed"> Deeper analysis (slower)</label>
+          <div id="error" role="alert" class="error" hidden></div>
+        </section>
+
+        <section>
+          <div class="section-head">02 // REVIEW &amp; ASSUMPTIONS</div>
+          <p class="section-intro">Review detected values before trusting the deterministic preview.</p>
+          <div class="field"><label>DEMO SCENARIO</label><select id="example"><option value="truss">Pratt-style truss</option><option value="beam">Beam / distributed load</option><option value="machine3d">3D shaft / bearings</option><option value="cable3d">3D cable forces</option><option value="frame2d">2D frame (preview only)</option><option value="frameSolved2d">Fixed frame / reaction moments</option><option value="spring2d">Hanging springs / Hooke law</option><option value="pulley2d">Ideal movable pulley</option><option value="belt2d">Belt / pulley friction</option><option value="friction2d">Sliding versus tipping</option><option value="centroid2d">Composite centroid &amp; Ix/Iy</option><option value="curved2d">Curved boundary / exact Ix-Iy</option><option value="vector3d">3D force moment &amp; couple</option></select><button id="loadDemo" class="outline wide">LOAD DEMO</button></div>
+          <div class="field"><label>LOAD MULTIPLIER <b id="multiplierLabel">1.00×</b></label><input id="multiplier" type="range" min="0" max="200" value="100"></div>
+          <div class="field"><label>ASSUMED TRUSS MEMBER AREA</label><div class="units"><input id="area" type="number" min="1" step="10" value="1200"><span>mm²</span></div></div>
+          <div class="field"><label>ASSUMED ELASTIC MODULUS</label><div class="units"><input id="elastic" type="number" min="1" step="10" value="200"><span>GPa</span></div></div>
+          <div class="field"><label>YIELD STRESS (CLASSROOM CHECK)</label><div class="units"><input id="yield" type="number" min="1" step="10" value="250"><span>MPa</span></div></div>
+          <button id="reset" class="outline wide danger">RESTORE CURRENT SCENE</button>
+        </section>
+
+        <details class="advanced-details">
+          <summary>03 // ADVANCED INPUT</summary>
+          <div class="advanced-body">
+            <div class="hint">Review detected coordinates and forces. Edits re-run the deterministic solver.</div>
+            <textarea id="sceneJson" spellcheck="false" aria-label="Edit extracted scene JSON"></textarea>
+            <button id="applyJson" class="outline wide">APPLY EDITED SCENE</button>
+          </div>
+        </details>
+      </aside>
+
+      <div class="center">
+        <div class="panel canvas-panel">
+          <div class="canvas-top"><div><strong>03 // SOLVE</strong><small id="sceneTitle">SELECTED: PRATT TRUSS // EXAMPLE</small></div><span id="solverBadge" class="chip">READY</span></div>
+          <div class="toolbar"><button data-mode="select" class="on">SELECT / DRAG</button><button data-mode="load">LOAD</button><button data-mode="build">+ MEMBER</button><button data-mode="delete">DELETE</button><button id="labels" class="on">Aa LABELS</button></div>
+          <div class="viewport-frame"><canvas id="stage" tabindex="0" role="img" aria-label="Interactive structural scene" aria-describedby="modeInfo"></canvas></div>
+          <div class="canvas-foot"><span id="modeInfo">Drag nodes to explore geometry. Drag blank canvas to pan. Scroll to zoom.</span><span>TRUSSVISION.AI</span></div>
+        </div>
+        <div class="panel explanation">
+          <div class="section-head">04 // PROBLEM ANALYSIS <span>STATICS / STEP BY STEP</span></div>
+          <p id="explanation">Load a problem to see the free-body diagram, equilibrium equations, calculations and interpretation.</p>
+          <div id="analysisSteps" class="analysis-steps"></div>
+          <div id="warnings" class="notes"></div>
+        </div>
+      </div>
+
+      <aside class="panel sidebar right">
+        <section>
+          <div class="section-head">04 // RESULTS</div>
+          <div class="stat-grid"><div><small>STRUCTURE</small><strong id="kind">TRUSS</strong></div><div><small>NODES / MEMBERS</small><strong id="counts">5 / 7</strong></div><div><small>MAX UTILIZATION</small><strong id="util">--</strong></div><div><small>INPUT CONFIDENCE</small><strong id="confidence">DEMO</strong></div></div>
+          <div class="meter"><div id="bar"></div></div>
+          <div class="telemetry-section"><div class="mini-head">05A // MEMBER FORCE TELEMETRY</div><div class="hud-table-head member-cols"><span>MEMBER</span><span>STATE</span><span>FORCE</span></div><div id="telemetry" class="hud-data-table" aria-live="polite"></div></div>
+          <div class="telemetry-section"><div class="mini-head">05B // APPLIED NODE FORCES <span id="nodeForceUnit">kN</span></div><p class="telemetry-caption">External joint loads (Fx, Fy), not internal member forces.</p><div id="nodeTableHead" class="hud-table-head node-cols"><span>NODE</span><span>Fx</span><span>Fy</span></div><div id="nodeTelemetry" class="hud-data-table" aria-live="polite"></div><p id="beamNodeNote" class="telemetry-caption" hidden>Beam point loads and distributed loads act along the span; they are not included in the node table.</p></div>
+          <div class="telemetry-section"><div class="mini-head">05C // SUPPORT REACTIONS <span id="reactionUnit">kN</span></div><div id="reactionHead" class="hud-table-head node-cols"><span>NODE</span><span>Rx</span><span>Ry</span></div><div id="reactionTelemetry" class="hud-data-table" aria-live="polite"></div></div>
+        </section>
+        <section><div class="section-head">05 // ANALYSIS OUTPUT</div><div id="results" class="analysis"></div></section>
+        <section><div class="section-head">06 // OPTIONAL BEAM HANDOFF</div><button id="vetinExport" class="primary accent wide" disabled>SEND BEAM TO VETIN SOLVER</button><div id="vetinFeedback" class="hint" role="status" style="margin-top:8px">Only reviewed, dimensioned 2D beams can be handed off.</div></section>
+        <details class="advanced-details">
+          <summary>ADVANCED // METHOD &amp; EXPORT</summary>
+          <div class="advanced-body">
+            <p class="hint">2D trusses use a linear elastic pin-jointed stiffness method. Beams use statically determinate vertical point and distributed loads. Additional verified equations support reviewed springs, ideal pulley systems, friction thresholds, composite polygons, and explicitly defined 2D/3D rigid-body reactions. Unrecognized or underdetermined problems are never assigned invented answers.</p>
+            <button id="export" class="outline wide">EXPORT SCENE JSON</button>
+          </div>
+        </details>
+      </aside>
+    </main>
+    <footer>TRUSSVISION.AI // STRUCTURAL ANALYSIS WORKBENCH <span>VERIFY GEOMETRY, SUPPORTS, LOADS, ASSUMPTIONS AND UNITS</span></footer>
+  </div>
+  <dialog id="loadDialog" class="app-dialog" aria-labelledby="loadDialogTitle">
+    <form method="dialog" class="dialog-card">
+      <h2 id="loadDialogTitle">Edit joint load</h2>
+      <p id="loadDialogHelp" class="hint">Enter a vertical force. Negative values point downward.</p>
+      <label for="loadValue">Vertical force (<span id="loadUnit">kN</span>)</label>
+      <input id="loadValue" type="number" step="any" inputmode="decimal">
+      <div class="dialog-actions"><button id="loadCancel" class="outline" value="cancel">CANCEL</button><button id="loadApply" class="primary" value="apply">APPLY LOAD</button></div>
+    </form>
+  </dialog>
+  <dialog id="transferDialog" class="app-dialog" aria-labelledby="transferDialogTitle">
+    <form method="dialog" class="dialog-card">
+      <h2 id="transferDialogTitle">Review beam handoff</h2>
+      <p id="transferSummary" class="hint"></p>
+      <p class="dialog-warning">Confirm the dimensions, supports, loads, and units before opening the beam solver.</p>
+      <div class="dialog-actions"><button id="transferCancel" class="outline" value="cancel">CANCEL</button><button id="transferConfirm" class="primary accent" value="transfer">OPEN BEAM SOLVER</button></div>
+    </form>
+  </dialog>
+  <script src="./truss-solver.js"></script>
+  <script src="./statics-solvers.js"></script>
+  <script src="./mechanics-engine.js"></script>
+  <script src="./gemini-client.js" defer></script>
+  <script type="module" src="./app.js"></script>
+  <script src="./vetin-export.js" defer></script>
+</body>
+</html>

@@ -1,94 +1,103 @@
-# TrussVision
+# TrussVision — Statics Studio
 
-**AI-assisted statics diagram review and deterministic mechanics practice.**
+**Engineering mechanics workbench with a connected, physical-unit drawing editor and independently computed equilibrium solutions.**
 
-Built by **Azhan Mohammed and Santiago Pelaez** for **CrimsonCode: Hacktoberfest 2026**, hosted by **ACM at Washington State University**. The team placed **5th** (team-reported). The event follows Major League Hacking's Code of Conduct; it is not accurate to describe MLH as the sole event organizer.
+Built by Azhan Mohammed and Santiago Pelaez for WSU CrimsonCode / Hacktoberfest 2026, with a specialized beam-analysis component based on [Vetin Beam](https://github.com/rasimtemur/vetin-beam) by Rasim Temür (MIT license). Original copyright and MIT license notices are retained in `LICENSE` and `vetin/`.
 
-**Live demo (team repository):** https://santiago-pelaez.github.io/trussVision/trussvision/  
-**Source (team repository):** https://github.com/santiago-pelaez/trussVision  
-**Get a Google AI Studio API key:** https://aistudio.google.com/apikey
+## Use it
 
-## What it does
+- **GitHub Pages:** `https://santiago-pelaez.github.io/trussVision/trussvision/` (the root and `/trussvision/` open the original three-column TrussVision UI)
+- **Advanced mechanics editor (optional):** `/trussvision/workbench.html`, kept separate so it does not replace the original interface.
+- **Legacy viewer:** `/trussvision/legacy.html`, the same original UI for older links.
+- **Original Vetin beam analyzer:** `/vetin/`. Use this for beam shear/moment diagrams and elastic curves, not as a universal statics solver.
 
-1. Open a built-in mechanics example **without an API key**, or upload a cropped JPG/PNG/WebP diagram or small PDF.
-2. Optionally use Google's **Gemini API** to suggest the geometry, loads, supports, units, and problem type.
-3. **Review and correct** the extracted scene and any optional structured mechanics parameters in Advanced Input.
-4. Inspect the educational visualization and deterministic results for the supported problem class.
-5. For a supported **straight, horizontal, dimensioned 2D beam**, optionally hand off the reviewed scene to the preserved Vetin beam solver.
-6. Export the current scene as JSON.
+To run locally:
 
-Supported deterministic demonstrations include 2D trusses, simple beams, 2D/3D resultants, particle cables, ideal pulley ropes, Hooke-law springs, supported rigid bodies, dry/belt friction, composite polygon centroids, simple polynomial-bounded areas, and limited virtual work. **Support is conditional on valid structured input**, not merely recognizing an image. See [exact solver capabilities and assumptions](HIBBELER_COVERAGE_AND_LIMITS.md).
-
-This is an **educational prototype**, not a structural-design or safety-certification tool. AI extraction can misread diagrams or invent missing inputs; a confident-looking answer is not proof of correctness. Confirm *all* units, force directions, geometry and boundary conditions yourself.
-
-## Start locally
-
-No npm dependencies, build tools, or paid account required for the deterministic demos. Run a local HTTP server in the extracted **project root** (the folder containing `index.html`):
-
-```bash
+```sh
 python3 -m http.server 8765
 ```
 
-On Windows, `py -3 -m http.server 8765` also works. Then open **http://localhost:8765/trussvision/**. Select a demo and click **LOAD DEMO**.
+Navigate to `http://localhost:8765/trussvision/`.
 
-### To scan your own problem
+No framework, API server, installer or Google key is needed to draw, work through the examples, or solve a manually constructed problem. Scan mode requires a **user-supplied** Google AI Studio key from https://aistudio.google.com/apikey. The key is not saved by TrussVision and is passed directly to Google's API using the `x-goog-api-key` header. **Never add keys to Git commits or screenshots.** Google calls count against the user's quota. This static-site key model is appropriate for personal experimentation, not for a shared organization's centrally managed or publicly embedded API key.
 
-1. Create an API key in [Google AI Studio](https://aistudio.google.com/apikey). This is a **Gemini API key**, which may also authenticate compatible hosted Gemma models; TrussVision itself currently calls **Gemini image-understanding models**, not Gemma.
-2. Open **AI SETTINGS**, paste **your own** key, and choose an available model.
-3. Select your cropped image/PDF and click **SCAN**.
-4. Read warnings, verify the extracted numbers and units, and fix errors in the Advanced Input editor before drawing conclusions.
+## Optional advanced drawing tools (separate page)
 
-On **GitHub Pages** and other static hosts, the browser submits your key **directly to Google's API in a request header**, not to this GitHub repository. The key is not stored in source control or browser local storage, but it is still exposed to your own browser and its extensions. **Never share or commit API keys, screenshots containing keys, or `.env` files.** Apply quota limits and API restrictions as appropriate. For public production deployments, a trusted backend with rate controls is safer than a browser-supplied credential.
+1. Choose **Pin-jointed truss**, **Rigid body**, **Vertical spring system**, or **Ideal pulley** and click **New blank model**.
+2. Choose the **Joint** tool and click to place nodes on the physical-unit grid. Each node has a persistent ID and snapped coordinates.
+3. Add **members or springs** by clicking two existing joints. Add **forces, moments, supports, or pulleys** by clicking the target joint. Elements stay attached when you drag the joint.
+4. Edit joint positions and applied values in the selected-element inspector. Use the **Length** and **Force** controls to convert units, preserving physical quantities and moment consistency. The grid's snap interval is specified in the visible length unit.
+5. Review your assumptions, check the confirmation checkbox, and click **Solve reviewed model**.
+6. The diagram distinguishes applied forces and support reactions; for a solvable truss it labels member tension/compression and the calculated force. Numerical derivations and independent equilibrium residuals appear beside the drawing. Failed equations clear stale results.
+7. Use the **Advanced JSON** panel for numeric models without a 2D edit surface, including 3D equilibrium, composite areas, friction, bearings, and multibody frames. Download the current JSON as a reusable example.
 
-On **Netlify**, you can configure the optional `netlify/functions/analyze.cjs` handler with a *server-side* `GEMINI_API_KEY`. The front end prefers the same-origin `/api/analyze` endpoint when available. A publicly exposed unprotected server endpoint may consume your quota; consider authentication, abuse protection, and rate limiting before deploying a shared server key.
+**Spring workflow:** The guided spring mode supports one vertical hanging force connected to a single unbranched series chain of spring elements, with a fixed top anchor assumed. It does not solve arbitrary branched spring networks, dynamic release, or distributed mass. **Pulley workflow:** The guided ideal pulley computes equal tension in a user-specified count of supporting rope segments. It does not infer the number of segments from the drawing, pulley inertia, slipping, or arbitrary frictional rope configurations.
 
-## Routes
+## Gemini image scans and review
 
-| Path | Purpose |
+Input: **one problem at a time**, PNG/JPEG/WEBP up to 9 MB. The extraction prompt asks for:
+
+- Every printed measurement and its original explicit unit (including stiffness, couples, distributed loads, mass, area, and angles), source of the value, and an uncertainty indicator;
+- Separate typed unit-audit fields and a list of unresolved units;
+- Support restraints, known forces, dimensions and directions without fabricated reactions;
+- A structured physics model only if the diagram contains enough trustworthy information.
+
+The UI lists reported source quantities for review. **The scan is a draft, not a verified engineering answer**: user review is required, ambiguous units are rejected by the adapter, and the deterministic solver—not Gemini—computes the results. Only one model request is made per scan; there are no hidden multiple-model retries that can exhaust API quota. Previously saved diagnostic JSON files can be imported without another Gemini call. If a scan is incomplete, the previous answer is cleared rather than shown alongside the error.
+
+## Supported numerical solver families
+
+| Solver | Practical scope |
 | --- | --- |
-| `/` | Redirects to the TrussVision workbench |
-| `/trussvision/` | Main statics workbench, demonstrations, JSON review, Gemini adapter |
-| `/vetin/` | Original Vetin beam-analysis application, with an explicit handoff bridge |
-| `/netlify/functions/analyze.cjs` | Optional server-side Gemini integration (Netlify only) |
-| `/tests/` | Regression tests, physical benchmarks and integration contracts |
+| 2D and 3D force resultants | Concurrent force addition; known eccentric moments where coordinates are given |
+| 3D vectors | Unit vectors, angles and directed moments |
+| Rigid 2D body | Pin/fixed/directional/vertical roller supports, point loads and couples |
+| Rigid 3D body | Ball, journal, thrust bearing and specified directional restraints, eccentric loads |
+| Pin-jointed trusses | Statically determinate planar (editor) and spatial (advanced JSON) systems |
+| Multibody planar frames | Explicit rigid bodies and internal hinge connections |
+| Cable joints | Particle equilibrium and tension-only cable constraints |
+| Springs | Ideal linear series/parallel Hooke-law combinations, explicit stiffness units |
+| Ideal pulley | Ideal mechanical advantage for explicitly entered supporting-rope count |
+| Friction | Capstan/belt model and a simplified rigid-block slide-versus-tip threshold |
+| Composite sections | Exact area/centroid/inertia for supported rectangles, polygons, semicircles and quarter circles; mass density/thickness weighting |
+| Vetin beam analysis | Specialized beam support reactions, shear, bending-moment and elastic-curve methods, with Vetin's original limits |
 
-The app is framework-free and works on static hosts. GitHub Pages **does not run Netlify functions**; on Pages, scans require a personal API key in AI Settings.
+There are **17 self-contained numerical examples**. Every model that the solver accepts still requires physical assumptions to match the real diagram. Zero equilibrium residual verifies the equations for *that model*, not correct image recognition.
 
-## Run checks
+## Limitations / accuracy standard
 
-From the repository root with Node.js installed:
+This is **not an arbitrary Hibbeler textbook solver** or a certified structural design package. A single image can omit an essential contact direction, hidden hinge, external load, or unit. Unsupported classes include arbitrary spring/pulley/gear network topology, mechanisms requiring virtual work, fully indeterminate trusses without stiffness methods, general contact/friction networks, large deflections, nontrivial material nonlinearities, and automatic parsing of every multibody figure. The app must request corrections instead of manufacturing a result. Independent professional verification is required for real-world structural and nuclear engineering decisions.
 
-```bash
+Numerical regression passing does **not** establish real-image OCR success rates. A fresh authenticated real-image end-to-end matrix across all supported problem families remains a release acceptance requirement before advertising all-scan accuracy.
+
+## Development checks
+
+```sh
+node tests/core-v2-tests.js
+node tests/studio-editor-tests.js
 node tests/run-tests.js
 node tests/trussvision-checks.js
-node tests/truss-regression.js
-node tests/statics-regression.js
-node tests/ce211-paper-benchmarks.js
+node tests/gemini-contract.js
 node tests/hibbeler-regression.js
 node tools/check-deploy.js
 ```
 
-The included GitHub Actions workflow runs these checks on each push or pull request. Automated numerical checks validate known examples and explicit failure cases, **not** every real-world statics drawing or AI scan. The Gemini integration cannot be tested without an API key and network access.
+Browser interaction tests use Playwright + Chromium. Install Python Playwright and a Chromium browser, then run `python3 tests/studio-browser.py`. The browser test injects the project's real static HTML/CSS/JS into Chromium, exercises all 17 examples, node/member/support/force/spring/pulley editing, physical unit conversion, and safe failure of an incomplete JSON import, **without any billable Gemini API call**.
 
-## Publish to GitHub Pages
+Do not publish photographed CE 211 exam materials or associated identifiable private benchmark files; exams were privately used to discover and reproduce parser/solver weaknesses but are intentionally excluded from the repository.
 
-See **[PUBLISHING_GUIDE.md](PUBLISHING_GUIDE.md)** for step-by-step publishing instructions, including the existing team repository, collaborator permissions, a separate personal fork/repository, and how to check the live site.
+## Project paths
 
-The Pages deployment uses **Settings → Pages → Deploy from a branch → main → /(root)**. There is no build command. Keep `index.html`, `trussvision/`, `vetin/`, and `netlify/` in the same repository root. After changes, wait for the Pages deployment to finish and check the console and the live site.
+- `trussvision/index.html`: original public TrussVision interface, restored unchanged
+- `trussvision/workbench.html`: optional advanced unit-aware editing workspace
+- `trussvision/workbench.js`: editable SVG surface and numerical output, no framework
+- `trussvision/core/editor.js`: connected graph and unit-aware editing
+- `trussvision/core/engine.js`: independently verified deterministic SI mechanics
+- `trussvision/core/adapter.js`: strict draft-extraction → typed numerical model converter
+- `trussvision/gemini-client.js`: private user API call, source-value and unit extraction prompt
+- `trussvision/legacy.html`: compatibility alias of the original TrussVision UI
+- `vetin/`: separately licensed beam analyzer, left in place
+- `tests/`: core, legacy and interactive regression suites
 
-## Architecture and limits
+## Attribution and licenses
 
-- `trussvision/app.js`: UI state, interactive canvas, scan workflow, solver presentation.
-- `trussvision/truss-solver.js` / `statics-solvers.js` / `mechanics-engine.js`: deterministic math paths.
-- `trussvision/gemini-client.js`: direct Google API adapter for static hosts, with bounded scene extraction.
-- `trussvision/vetin-export.js`: unit-checked bridge to the preserved Vetin model.
-- `vetin/`: original beam simulation and its bundled libraries/assets.
-- `tests/`: independent regression checks; see the included mathematical validation reports.
-
-AI review and math solving are separate. Do not expect every classified `beam`, `frame`, `3D`, `friction` or `spring` image to solve without manually supplying appropriate structured data. The bridge supports a smaller set than the full preview engine. Review [coverage and known unsupported cases](HIBBELER_COVERAGE_AND_LIMITS.md) before trusting outputs.
-
-## Credits and license
-
-TrussVision: **Azhan Mohammed and Santiago Pelaez**. Built for the [WSU ACM CrimsonCode: Hacktoberfest 2026 event](https://wsu-acm.github.io/crimsoncode/).
-
-The project **builds on and includes** the MIT-licensed [Vetin Beam Analysis](https://github.com/rasimtemur/vetin-beam) software by Assoc. Prof. Dr. **Rasim Temür**, Istanbul University-Cerrahpasa. Original Vetin source, third-party dependencies, and attribution are retained. See the repository [MIT License](LICENSE).
+TrussVision builds on the open-source Vetin Beam project by Assoc. Prof. Rasim Temür, Istanbul University-Cerrahpaşa. See `LICENSE` and the attribution and original license notices inside `vetin/`.

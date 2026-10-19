@@ -1,0 +1,44 @@
+'use strict';
+const assert=require('node:assert/strict');
+const path=require('node:path');
+const core=require('../trussvision/core/engine.js');
+const adapt=require('../trussvision/core/adapter.js');
+const examples=require('../trussvision/core/examples.js');
+const q=(value,unit)=>({value,unit});
+let passed=0;const test=(title,fn)=>{try{fn();console.log('PASS',title);passed++}catch(e){console.error('FAIL',title);throw e}};
+const near=(actual,want,tol=1e-6)=>assert.ok(Math.abs(actual-want)<=tol,`${actual} != ${want} (tol ${tol})`);
+const throwsCode=(fn,code)=>{assert.throws(fn,e=>e?.code===code,`expected ${code}`)};
+for(const [key,e] of Object.entries(examples))test(`Reviewed demo ${key} computes`,()=>{const res=core.solve(e.model);assert.ok(res.type);if(res.relativeResidual!==undefined)assert.ok(res.relativeResidual<1e-7)});
+test('3D unit vector normalized',()=>{const r=core.solve(examples['unit-vector'].model);near(r.unitVector[0],-6/7);near(r.unitVector[1],2/7);near(r.unitVector[2],3/7)});
+test('Angle between normalized directions',()=>near(core.solve(examples['direction-angle'].model).angle_deg,45));
+test('Angle rejects zero direction',()=>throwsCode(()=>core.solve({operation:'angle_between',first:[0,0,0],second:[1,0,0]}),'ZERO_DIRECTION'));
+test('Force radius angle rather than guessed Cartesian force',()=>{const r=core.solve(examples['wheel-moment'].model);near(r.momentMagnitude_Nm,1.25*.3048*40*4.4482216152605*.5)});
+test('Independent 2D fixed beam reactions',()=>{const r=core.solve(examples.cantilever.model);near(r.unknowns['A.Ry'],10000);near(r.unknowns['A.Mz'],18000);near(r.unknowns['A.Rx'],0)});
+test('2D normal contact reaction and pin components',()=>{const r=core.solve(examples['inclined-roller'].model);const s=4.4482216152605;near(r.unknowns['D.R']/s,141.66666666666666);near(r.unknowns['A.Rx']/s,85);near(r.unknowns['A.Ry']/s,-83.33333333333331)});
+test('3D journals with independent gear radius torque cancellation',()=>{const r=core.solve(examples['gear-bearings'].model);near(r.unknowns['C.Ry'],16);near(r.unknowns['C.Rz'],-24);near(r.unknowns['D.Ry'],-96);near(r.unknowns['D.Rz'],-16)});
+test('Offset gear forces that do not balance shaft torque must be rejected',()=>{const m=structuredClone(examples['gear-bearings'].model);m.forces[1].at.value[2]=-.02;throwsCode(()=>core.solve(m),'INCONSISTENT')});
+test('Spring N/mm converted to N/m',()=>{const r=core.solve(examples['hanging-springs'].model);near(r.extension_mm,(.8*9.81)/20);near(r.k_N_per_m,20000)});
+test('Unlabeled spring stiffness rejected',()=>throwsCode(()=>core.solve({operation:'spring',arrangement:'parallel',springs:[{value:27.1}],force:q(10,'N')}),'UNIT_MISSING'));
+test('Unknown operation never guesses result',()=>throwsCode(()=>core.solve({operation:'everything_hibbeler'}),'NOT_IMPLEMENTED'));
+test('3D resultant moment cross product',()=>{const r=core.solve(examples['spatial-moments'].model);assert.deepEqual(r.R_N,[4,6,-2]);assert.deepEqual(r.M_Nm,[-16,16,4])});
+test('Missing geometry uses review gate',()=>assert.equal(adapt.assess({kind:'machine3d',nodes:[],members:[]}).code,'REVIEW_REQUIRED'));
+test('Reject invalid support reaction DOF',()=>throwsCode(()=>core.solve({operation:'rigid2d',dimension:2,forces:[{at:q([1,0],'m'),vector:q([0,-1],'N')}],supports:[{id:'A',type:'unknown',at:q([0,0],'m')}]}),'UNSUPPORTED_SUPPORT'));
+test('Underdetermined reaction problem is not assigned zero',()=>throwsCode(()=>core.solve({operation:'rigid2d',dimension:2,forces:[{at:q([1,0],'m'),vector:q([0,-1],'N')}],supports:[{id:'A',type:'pin',at:q([0,0],'m')}]}),'INCONSISTENT'));
+test('Unbalanced applied force with no support fails',()=>throwsCode(()=>core.solve({operation:'rigid2d',dimension:2,forces:[{at:q([1,0],'m'),vector:q([0,-1],'N')}],supports:[]}), 'NO_SUPPORTS'));
+test('Precision: mixed mm vs m coordinates',()=>{const r=core.solve({operation:'unit_vector',from:q([0,0,0],'mm'),to:q([300,400,0],'mm')});near(r.length_m,.5);near(r.unitVector[0],.6);near(r.unitVector[1],.8)});
+test('Unknown coordinate units rejected',()=>throwsCode(()=>core.solve({operation:'unit_vector',from:q([0,0,0],'relative'),to:q([1,0,0],'relative')}),'UNIT_MISSING'));
+test('Method of joints truss reactions and member forces',()=>{const r=core.solve(examples['planar-truss'].model);near(r.unknowns['A.Ry'],5000);near(r.unknowns['B.Ry'],5000);near(r.unknowns['N.A-B'],(10/3)*1000);assert.equal(r.members.find(x=>x.member==='A-C').state,'compression')});
+test('Massless cable cannot sustain compression',()=>{const m=structuredClone(examples['two-cables'].model);m.forces[0].value=[0,100];throwsCode(()=>core.solve(m),'SLACK_CABLE')});
+test('Symmetric cable forces',()=>{const r=core.solve(examples['two-cables'].model);near(r.unknowns['T.L'],100/Math.sqrt(2));near(r.unknowns['T.R'],100/Math.sqrt(2))});
+test('Belt friction angle converted from degrees',()=>{const r=core.solve(examples['belt-friction'].model);near(r.lowTension_N/4.4482216152605,44*Math.exp(-.43*2*Math.PI))});
+test('Slide/tipping thresholds and critical friction',()=>{const r=core.solve(examples['slide-tip'].model);near(r.criticalMu,.25);near(r.slideForce_N/4.4482216152605,36);near(r.tipForce_N/4.4482216152605,45);assert.equal(r.first,'sliding')});
+
+
+
+test('Two-body frame with internal hinge gets 6 reaction components',()=>{const r=core.solve(examples['hinged-frame'].model);near(r.unknowns['A.Rx'],-5);near(r.unknowns['A.Ry'],-20/3);near(r.unknowns['C.Rx'],-5);near(r.unknowns['C.Ry'],20/3);near(r.relativeResidual,0)});
+test('Disconnected frame hinge is rejected',()=>{const m=structuredClone(examples['hinged-frame'].model);m.joints[0].atB.value[0]=3.1;throwsCode(()=>core.solve(m),'FRAME_JOINT')});
+test('Rectangular area minus exact semicircle has positive area and Ix',()=>{const r=core.solve(examples['composite-area'].model);near(r.area_m2,48-4.5*Math.PI);near(r.cx_m,3);assert.ok(r.IxCentroid_m4>0);assert.ok(r.IyCentroid_m4>0)});
+test('Composite density correct independent weighted center',()=>{const r=core.solve(examples['composite-mass'].model);const am=48*600*2,voidMass=4.5*Math.PI*600*2,triMass=16*900*2;near(r.mass_kg,am-voidMass+triMass);near(r.centerMass_m[0],(am*3-voidMass*3+triMass*(6+4/3))/r.mass_kg);near(r.centerMass_m[1],(am*4-voidMass*4/Math.PI+triMass*8/3)/r.mass_kg)});
+test('Negative or zero composite area rejected',()=>{const r={operation:'geometry2d',regions:[{type:'rectangle',origin:q([0,0],'m'),width:q(1,'m'),height:q(1,'m'),cutout:true}]};throwsCode(()=>core.solve(r),'GEOMETRY')});
+test('Calculated output never contains nonfinite values',()=>{const validate=x=>{if(typeof x==='number')assert.ok(Number.isFinite(x));else if(Array.isArray(x))x.forEach(validate);else if(x&&typeof x==='object')Object.values(x).forEach(validate)};for(const model of Object.values(examples).map(x=>x.model))validate(core.solve(model))});
+console.log(`${passed} independent core-v2 checks passed`);
