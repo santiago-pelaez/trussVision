@@ -2,7 +2,6 @@ name: TrussVision checks
 
 on:
   push:
-    branches: [main, new-ui]
   pull_request:
 
 jobs:
@@ -15,18 +14,38 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+      - name: Run independent TrussVision core v2 tests
+        run: node tests/core-v2-tests.js
+      - name: Check core-v2 JavaScript syntax
+        shell: bash
+        run: |
+          node --check trussvision/core/engine.js
+          node --check trussvision/core/adapter.js
+          node --check trussvision/core/examples.js
+          node --check trussvision/core/editor.js
+          node --check trussvision/workbench.js
+      - name: Run connected editor and unit consistency tests
+        run: node tests/studio-editor-tests.js
       - name: Run Vetin regression suite
         run: node tests/run-tests.js
       - name: Run TrussVision contract checks
         run: node tests/trussvision-checks.js
       - name: Run truss physics regressions
         run: node tests/truss-regression.js
+      - name: Run beam and 3D moment regressions
+        run: node tests/statics-regression.js
+      - name: Run CE211 paper reference benchmarks
+        run: node tests/ce211-paper-benchmarks.js
+      - name: Expanded Hibbeler mechanics regressions
+        run: node tests/hibbeler-regression.js
       - name: Validate deployment references
         run: node tools/check-deploy.js
       - name: Check JavaScript syntax
         shell: bash
         run: |
           node --check trussvision/app.js
+          node --check trussvision/statics-solvers.js
+          node --check trussvision/fundamentals-solvers.js
           node --check trussvision/gemini-client.js
           node --check trussvision/vetin-export.js
           node --check netlify/functions/analyze.cjs

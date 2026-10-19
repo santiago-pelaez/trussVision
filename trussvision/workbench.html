@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#0a1829"><title>TrussVision | Statics Studio</title><link rel="stylesheet" href="./workbench.css"></head>
+<body>
+<header class="topbar"><a href="./workbench.html" class="brand"><span class="brandmark">△</span> TRUSSVISION <span class="muted">/ STATICS STUDIO</span></a><nav><a href="../vetin/" target="_blank" rel="noopener">Beam analysis (Vetin) ↗</a><a href="./legacy.html">Legacy viewer ↗</a></nav></header>
+<main>
+  <div class="hero"><div class="eyebrow">MECHANICS · VISUAL LEARNING · DETERMINISTIC SOLVING</div><h1>See the forces. Understand the equations.</h1><p>Draw on a physical-unit grid, snap structural elements to joints, analyze forces, and see why reactions and member forces take their values. For photo questions, review Gemini's interpretation before solving.</p></div>
+  <div class="studio">
+    <section class="workspace" aria-label="Mechanics drawing workspace">
+      <div class="workspace-heading"><h2>01 · Draw a system</h2><span id="gridReadout">Grid: 1 m · +x right, +y up</span></div>
+      <div class="controls-row">
+        <label>Problem type <select id="editMode"><option value="truss2d">Pin-jointed truss</option><option value="rigid2d">Rigid body</option><option value="spring">Vertical spring system</option><option value="ideal_pulley">Ideal pulley</option></select></label>
+        <label>Length <select id="lengthUnit"><option value="m">m</option><option value="cm">cm</option><option value="mm">mm</option><option value="ft">ft</option><option value="in">in</option></select></label>
+        <label>Force <select id="forceUnit"><option>N</option><option>kN</option><option>lb</option></select></label>
+        <label>Snap interval <input type="number" id="gridStep" min="0.0001" step="any" value="1"></label>
+        <button id="newCanvas" class="secondary">New blank model</button>
+      </div>
+      <div class="toolbar" role="toolbar" aria-label="Model editing tools">
+        <button data-tool="select" class="active">↖ Select / drag</button>
+        <button data-tool="node">⊕ Joint</button>
+        <button data-tool="member">╱ Member</button>
+        <button data-tool="pin">△ Pin</button>
+        <button data-tool="roller">◯ Roller</button>
+        <button data-tool="fixed">▣ Fixed</button>
+        <button data-tool="force">↓ Force</button>
+        <button data-tool="couple">↻ Moment</button>
+        <button data-tool="spring">〽 Spring</button>
+        <button data-tool="pulley">◉ Pulley</button>
+      </div>
+      <div class="canvas-wrap"><svg id="modelCanvas" viewBox="0 0 800 460" role="img" aria-label="Editable mechanics model: select a tool and click grid positions to add nodes, or select nodes to connect or load them" tabindex="0"></svg><div class="canvas-key"><span><i class="key-member"></i> Member</span><span><i class="key-tension"></i> Tension</span><span><i class="key-compression"></i> Compression</span><span><i class="key-load"></i> Applied force</span></div></div>
+      <div class="edit-help" id="toolHint" role="status">Select a tool and click a grid location to add a joint. Drag an existing joint to move it.</div>
+      <div class="edit-bottom"><div><label>Force X <input type="number" id="forceX" value="0" step="any"></label><label>Force Y <input type="number" id="forceY" value="-10" step="any"></label><label>Moment <input type="number" id="momentInput" value="10" step="any"></label><label>Pulley strands <input type="number" id="segmentsInput" value="2" min="1" max="16"></label></div><button id="zoomFit" class="secondary">Fit drawing</button></div>
+      <section class="inspector"><div><h3>Selected element</h3><div id="selectionInfo">Click a joint, force, spring, or member to inspect it.</div></div><div id="inspectorFields"></div><button id="deleteSelection" class="danger" disabled>Delete selected</button></section>
+    </section>
+    <aside class="sidepanel">
+      <section class="panel" aria-labelledby="resultsTitle"><div class="panel-title"><h2 id="resultsTitle">02 · Calculate and verify</h2><span id="status" role="status">READY</span></div><p class="help">All numerical inputs come from this model. The solver uses SI internally and shows the governing equations.</p><label class="check"><input id="reviewed" type="checkbox"> I checked the dimensions, supports, force directions and units.</label><button class="primary" id="solve">Solve reviewed model</button><div id="error" class="error" role="alert" hidden></div><div id="result" aria-live="polite"><div class="empty">Build a model or load an example, review the inputs, then solve.</div></div></section>
+      <section class="panel" aria-label="Try a worked example"><h2>03 · Explore an example</h2><label for="demo">Verified numerical examples</label><select id="demo"></select><button id="loadExample">Load selected example</button><p class="help">Examples use no API credits. You can move joints, add loads, and rerun eligible systems.</p></section>
+      <section class="panel" aria-label="Scan image with Gemini"><h2>04 · Scan one problem</h2><label for="problemImage">Photo of one problem (PNG / JPEG / WEBP)</label><input type="file" id="problemImage" accept="image/png,image/jpeg,image/webp"><img id="preview" alt="Problem preview" hidden><label for="apiKey">Google AI Studio API key (memory only)</label><input id="apiKey" type="password" autocomplete="off" placeholder="Paste private key"><label for="aiModel">Gemini model</label><select id="aiModel"><option value="gemini-3.8-flash">gemini-3.8-flash</option><option value="gemini-3.6-flash">gemini-3.6-flash</option><option value="gemini-4-argon">gemini-4-argon</option></select><button id="scan">Extract forces, supports and units</button><p class="help">The AI must report each physical quantity's original unit and flag ambiguous signs or dimensions. <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Get an API key ↗</a></p><label for="sceneFile">Or import your existing JSON report</label><input id="sceneFile" type="file" accept=".json,application/json"><div id="extractionReview" class="measurements" aria-live="polite"></div><details><summary>Raw extraction (read only)</summary><pre id="raw">No AI extraction yet.</pre></details></section>
+      <section class="panel"><h2>05 · Advanced model JSON</h2><p class="help">For 3D, friction, centroids, and complex frames, edit the typed model directly. All dimensions and loads must explicitly carry units.</p><label for="model">Canonical mechanics model</label><textarea id="model" rows="12" spellcheck="false"></textarea><button id="applyJSON" class="secondary">Sync diagram from JSON</button><button id="downloadModel" class="secondary">Save model JSON</button><details><summary>How to interpret the results</summary><p>The force arrows show direction and relative strength. Blue/teal members represent tension; orange/red members represent compression. Joint equilibrium means the vector sum of forces is zero. Failed or incomplete models are not given fabricated results.</p></details></section>
+    </aside>
+  </div>
+</main><footer><span>TRUSSVISION · MECHANICS STUDIO</span><span>VETIN (MIT) REMAINS THE SPECIALIZED BEAM ENGINE · NO UNREVIEWED AI ANSWERS</span></footer>
+<script src="./core/engine.js"></script><script src="./core/adapter.js"></script><script src="./core/editor.js"></script><script src="./core/examples.js"></script><script src="./gemini-client.js"></script><script src="./workbench.js"></script>
+</body></html>

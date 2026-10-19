@@ -1,0 +1,24 @@
+(function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;root.TrussVisionExamples=api})(typeof globalThis!=='undefined'?globalThis:this,function(){
+ 'use strict';
+ const q=(value,unit)=>({value,unit});
+ const examples={
+  'unit-vector':{title:'3D unit vector',category:'Vector mathematics',model:{operation:'unit_vector',from:q([0,0,0],'ft'),to:q([-6,2,3],'ft')}},
+  'direction-angle':{title:'Angle between 3D vectors',category:'Vector mathematics',model:{operation:'angle_between',first:[1,0,0],second:[1,1,0]}},
+  'wheel-moment':{title:'Moment using force, radius and angle',category:'Moments',model:{operation:'moment_magnitude',leverArm:q(1.25,'ft'),force:q(40,'lb'),angle:q(30,'deg')}},
+  'cantilever':{title:'Fixed-support planar equilibrium',category:'Rigid bodies',model:{operation:'rigid2d',dimension:2,forces:[{at:q([1.8,0],'m'),vector:q([0,-10],'kN')}],supports:[{id:'A',type:'fixed',at:q([0,0],'m')}]}},
+  'inclined-roller':{title:'Inclined smooth contact and wall pin',category:'Rigid bodies',model:{operation:'rigid2d',dimension:2,forces:[{at:q([5,0],'ft'),vector:q([0,-30],'lb')}],couples:[q(-20,'ft*lb')],supports:[{id:'A',type:'pin',at:q([0,0],'ft')},{id:'D',type:'direction',at:q([3,-2],'ft'),direction:[-3,4]}]}},
+  'gear-bearings':{title:'3D shaft with eccentric gear forces',category:'Spatial bodies',model:{operation:'rigid3d',dimension:3,forces:[{at:q([.3,-.06,0],'m'),vector:q([0,0,40],'N')},{at:q([.9,0,-.03],'m'),vector:q([0,80,0],'N')}],supports:[{id:'C',type:'journal_bearing',axis:[1,0,0],at:q([0,0,0],'m')},{id:'D',type:'journal_bearing',axis:[1,0,0],at:q([.75,0,0],'m')}]}},
+  'hanging-springs':{title:'Hanging masses and spring stiffness units',category:'Springs',model:{operation:'spring',arrangement:'parallel',springs:[q(20,'N/mm')],masses:[q(.5,'kg'),q(.3,'kg')]}},
+  'planar-truss':{title:'Three-bar planar truss (method of joints)',category:'Trusses',model:{operation:'truss2d',nodes:[{id:'A',at:q([0,0],'m')},{id:'B',at:q([4,0],'m')},{id:'C',at:q([2,3],'m')}],members:[{a:'A',b:'B'},{a:'A',b:'C'},{a:'B',b:'C'}],supports:[{node:'A',type:'pin'},{node:'B',type:'roller'}],loads:[{node:'C',vector:q([0,-10],'kN')}]}},
+  'two-cables':{title:'Two-cable joint equilibrium',category:'Cables',model:{operation:'particle',dimension:2,forces:[q([0,-100],'N')],cables:[{id:'L',direction:[-1,1]},{id:'R',direction:[1,1]}]}},
+  'belt-friction':{title:'Capstan / belt friction threshold',category:'Friction',model:{operation:'belt_friction',mu:.43,highTension:q(44,'lb'),wrapAngle:q(360,'deg')}},
+  'slide-tip':{title:'Sliding versus tipping',category:'Friction',model:{operation:'slide_tip',weight:q(180,'lb'),width:q(2,'ft'),pushHeight:q(4,'ft'),muStatic:.2}},
+  'hinged-frame':{title:'Two-body three-hinged frame',category:'Frames & machines',model:{operation:'frame2d',bodies:[{id:'beam',forces:[],couples:[q(-20,'N*m')],supports:[{id:'A',type:'pin',at:q([0,0],'m')}]},{id:'column',forces:[{at:q([3,-1],'m'),vector:q([10,0],'N')}],supports:[{id:'C',type:'pin',at:q([3,-2],'m')}]}],joints:[{id:'B',bodyA:'beam',bodyB:'column',atA:q([3,0],'m'),atB:q([3,0],'m')}]}},
+  'composite-area':{title:'Exact area centroid: rectangle minus semicircle',category:'Centroids & inertia',model:{operation:'geometry2d',regions:[{type:'rectangle',origin:q([0,0],'m'),width:q(6,'m'),height:q(8,'m')},{type:'semicircle',center:q([3,0],'m'),radius:q(3,'m'),sy:1,cutout:true}]}},
+  'composite-mass':{title:'Composite center of gravity by material density',category:'Centroids & inertia',model:{operation:'geometry2d',regions:[{type:'rectangle',origin:q([0,0],'m'),width:q(6,'m'),height:q(8,'m'),density:q(600,'kg/m3'),thickness:q(2,'m')},{type:'semicircle',center:q([3,0],'m'),radius:q(3,'m'),sy:1,cutout:true,density:q(600,'kg/m3'),thickness:q(2,'m')},{type:'polygon',vertices:[q([6,0],'m'),q([6,8],'m'),q([10,0],'m')],density:q(900,'kg/m3'),thickness:q(2,'m')}]}},
+  'spatial-truss':{title:'Four-joint 3D truss with six members',category:'Trusses',model:{operation:'truss3d',nodes:[{id:'A',at:q([0,0,0],'m')},{id:'B',at:q([4,0,0],'m')},{id:'C',at:q([0,3,0],'m')},{id:'D',at:q([0,0,3],'m')}],members:[{a:'A',b:'B'},{a:'A',b:'C'},{a:'A',b:'D'},{a:'B',b:'C'},{a:'B',b:'D'},{a:'C',b:'D'}],supports:[{node:'A',type:'ball'},{node:'B',type:'custom',directions:[[0,1,0],[0,0,1]]},{node:'C',type:'direction',direction:[0,0,1]}],loads:[{node:'D',vector:q([100,50,-600],'N')}]}},
+  'pulley-ideal':{title:'Ideal moving pulley: two rope segments',category:'Pulleys',model:{operation:'ideal_pulley',load:q(240,'N'),supportingSegments:2}},
+  'spatial-moments':{title:'Spatial force and applied couple',category:'Moments',model:{operation:'resultant',dimension:3,forces:[{at:q([2,-1,3],'m'),vector:q([4,6,-2],'N')}],couples:[q([0,0,-12],'N*m')]}}
+ };
+ return examples;
+});
