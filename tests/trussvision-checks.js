@@ -25,7 +25,8 @@ console.log('\nTrussVision contracts');
 
 const html = read('trussvision/legacy.html');
 const app = read('trussvision/app.js');
-check(/Relative\/illustrative coordinates cannot justify support reactions/.test(app), 'geometry-dependent equations reject unscaled scan coordinates');
+const independentAdapter = require(path.join(ROOT, 'trussvision', 'core', 'adapter.js'));
+check(!independentAdapter.assess({kind:'frame2d',units:'relative',forceUnit:'N',physics:{operation:'rigid2d',bodies:[{id:'R',forces:[],supports:[{id:'A',type:'pin',at:[0,0]}]}]}}).ok, 'canonical adapter rejects illustrative coordinates for support reactions');
 check(!/12\.1,0.*-63/.test(read('trussvision/gemini-client.js')), 'scan prompt does not seed the photographed exam answer as an example');
 const exporter = read('trussvision/vetin-export.js');
 const server = read('netlify/functions/analyze.cjs');
