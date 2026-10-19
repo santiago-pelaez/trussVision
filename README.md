@@ -6,8 +6,9 @@ Built by Azhan Mohammed and Santiago Pelaez for WSU CrimsonCode / Hacktoberfest 
 
 ## Use it
 
-- **GitHub Pages:** `https://santiago-pelaez.github.io/trussVision/trussvision/` (the root and `/trussvision/` redirect to the new studio after this branch is merged)
-- **Legacy viewer:** `/trussvision/legacy.html`, preserved for backwards comparison.
+- **GitHub Pages:** `https://santiago-pelaez.github.io/trussVision/trussvision/` (the root and `/trussvision/` open the original three-column TrussVision UI)
+- **Advanced mechanics editor (optional):** `/trussvision/workbench.html`, kept separate so it does not replace the original interface.
+- **Legacy viewer:** `/trussvision/legacy.html`, the same original UI for older links.
 - **Original Vetin beam analyzer:** `/vetin/`. Use this for beam shear/moment diagrams and elastic curves, not as a universal statics solver.
 
 To run locally:
@@ -20,7 +21,7 @@ Navigate to `http://localhost:8765/trussvision/`.
 
 No framework, API server, installer or Google key is needed to draw, work through the examples, or solve a manually constructed problem. Scan mode requires a **user-supplied** Google AI Studio key from https://aistudio.google.com/apikey. The key is not saved by TrussVision and is passed directly to Google's API using the `x-goog-api-key` header. **Never add keys to Git commits or screenshots.** Google calls count against the user's quota. This static-site key model is appropriate for personal experimentation, not for a shared organization's centrally managed or publicly embedded API key.
 
-## Interactive diagram
+## Optional advanced drawing tools (separate page)
 
 1. Choose **Pin-jointed truss**, **Rigid body**, **Vertical spring system**, or **Ideal pulley** and click **New blank model**.
 2. Choose the **Joint** tool and click to place nodes on the physical-unit grid. Each node has a persistent ID and snapped coordinates.
@@ -86,13 +87,14 @@ Do not publish photographed CE 211 exam materials or associated identifiable pri
 
 ## Project paths
 
-- `trussvision/workbench.html`: public studio UI
+- `trussvision/index.html`: original public TrussVision interface, restored unchanged
+- `trussvision/workbench.html`: optional advanced unit-aware editing workspace
 - `trussvision/workbench.js`: editable SVG surface and numerical output, no framework
 - `trussvision/core/editor.js`: connected graph and unit-aware editing
 - `trussvision/core/engine.js`: independently verified deterministic SI mechanics
 - `trussvision/core/adapter.js`: strict draft-extraction → typed numerical model converter
 - `trussvision/gemini-client.js`: private user API call, source-value and unit extraction prompt
-- `trussvision/legacy.html`: original TrussVision UI for compatibility
+- `trussvision/legacy.html`: compatibility alias of the original TrussVision UI
 - `vetin/`: separately licensed beam analyzer, left in place
 - `tests/`: core, legacy and interactive regression suites
 

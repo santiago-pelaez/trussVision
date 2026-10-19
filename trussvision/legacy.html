@@ -63,7 +63,7 @@
         <section>
           <div class="section-head">02 // REVIEW &amp; ASSUMPTIONS</div>
           <p class="section-intro">Review detected values before trusting the deterministic preview.</p>
-          <div class="field"><label>DEMO SCENARIO</label><select id="example"><option value="truss">Pratt-style truss</option><option value="beam">Beam / distributed load</option><option value="machine3d">3D shaft / bearings (PREVIEW ONLY)</option><option value="cable3d">3D cable forces</option><option value="frame2d">2D frame (preview only)</option><option value="frameSolved2d">Fixed frame / reaction moments</option><option value="spring2d">Hanging springs / Hooke law</option><option value="pulley2d">Ideal movable pulley</option><option value="belt2d">Belt / pulley friction</option><option value="friction2d">Sliding versus tipping</option><option value="centroid2d">Composite centroid &amp; Ix/Iy</option><option value="curved2d">Curved boundary / exact Ix-Iy</option><option value="vector3d">3D force moment &amp; couple</option></select><button id="loadDemo" class="outline wide">LOAD DEMO</button></div>
+          <div class="field"><label>DEMO SCENARIO</label><select id="example"><option value="truss">Pratt-style truss</option><option value="beam">Beam / distributed load</option><option value="machine3d">3D shaft / bearings</option><option value="cable3d">3D cable forces</option><option value="frame2d">2D frame (preview only)</option><option value="frameSolved2d">Fixed frame / reaction moments</option><option value="spring2d">Hanging springs / Hooke law</option><option value="pulley2d">Ideal movable pulley</option><option value="belt2d">Belt / pulley friction</option><option value="friction2d">Sliding versus tipping</option><option value="centroid2d">Composite centroid &amp; Ix/Iy</option><option value="curved2d">Curved boundary / exact Ix-Iy</option><option value="vector3d">3D force moment &amp; couple</option></select><button id="loadDemo" class="outline wide">LOAD DEMO</button></div>
           <div class="field"><label>LOAD MULTIPLIER <b id="multiplierLabel">1.00×</b></label><input id="multiplier" type="range" min="0" max="200" value="100"></div>
           <div class="field"><label>ASSUMED TRUSS MEMBER AREA</label><div class="units"><input id="area" type="number" min="1" step="10" value="1200"><span>mm²</span></div></div>
           <div class="field"><label>ASSUMED ELASTIC MODULUS</label><div class="units"><input id="elastic" type="number" min="1" step="10" value="200"><span>GPa</span></div></div>
@@ -135,7 +135,6 @@
       <div class="dialog-actions"><button id="transferCancel" class="outline" value="cancel">CANCEL</button><button id="transferConfirm" class="primary accent" value="transfer">OPEN BEAM SOLVER</button></div>
     </form>
   </dialog>
-  <div style="position:fixed;right:18px;bottom:15px;z-index:20"><a href="./workbench.html" style="display:inline-block;background:#0b928c;color:#06252b;padding:12px 15px;border-radius:9px;font-weight:700;box-shadow:0 8px 26px #0009;text-decoration:none" aria-label="Open independently verified mechanics workbench">OPEN VERIFIED MECHANICS ↗</a></div>
   <script src="./truss-solver.js"></script>
   <script src="./statics-solvers.js"></script>
   <script src="./mechanics-engine.js"></script>

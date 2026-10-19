@@ -90,7 +90,7 @@ function checkDeploy(root = ROOT) {
 
         const references = readHtmlReferences(root, entry);
         const html = fs.readFileSync(path.join(root, entry.html), 'utf8');
-        if (entry.html === 'trussvision/index.html' && !/workbench\.html/.test(html)) errors.push('TrussVision landing does not redirect to the new studio');
+        if (entry.html === 'trussvision/index.html' && (!/id="workflowScan"/.test(html) || !/id="stage"/.test(html))) errors.push('TrussVision landing must retain the original interactive workflow, not redirect');
         if (entry.html === 'trussvision/legacy.html') {
             const app = fs.readFileSync(path.join(root, 'trussvision', 'app.js'), 'utf8');
             const exporter = fs.readFileSync(path.join(root, 'trussvision', 'vetin-export.js'), 'utf8');

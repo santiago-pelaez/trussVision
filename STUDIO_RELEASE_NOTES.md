@@ -1,8 +1,12 @@
-# TrussVision Statics Studio — release candidate
+# TrussVision Statics Studio — opt-in mechanics editor
 
 This release introduces an editable 2D physical-unit mechanics grid, independent numerical solvers and Gemini quantity/unit provenance. It is intended for educational use and requires review of scans, not certified structural design.
 
-## Release acceptance evidence
+## Interface preservation
+
+The original TrussVision three-column interface remains the default at `/trussvision/`. The more extensive drawing workspace is available only by navigating to `/trussvision/workbench.html`. This was changed after feedback that the visual redesign had not been requested.
+
+## Local regression evidence
 
 - Numerical examples: **17/17** independently generated models solve in the new core, and each also completes through the browser button.
 - Core regression: 44 independent v2 checks, 9 connected-editor regression checks, and the historical Vetin / TrussVision suites pass.

@@ -23,7 +23,7 @@ function check(condition, message) {
 
 console.log('\nTrussVision contracts');
 
-const html = read('trussvision/legacy.html');
+const html = read('trussvision/index.html');
 const app = read('trussvision/app.js');
 const independentAdapter = require(path.join(ROOT, 'trussvision', 'core', 'adapter.js'));
 check(!independentAdapter.assess({kind:'frame2d',units:'relative',forceUnit:'N',physics:{operation:'rigid2d',bodies:[{id:'R',forces:[],supports:[{id:'A',type:'pin',at:[0,0]}]}]}}).ok, 'canonical adapter rejects illustrative coordinates for support reactions');
